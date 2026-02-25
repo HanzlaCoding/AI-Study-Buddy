@@ -48,20 +48,20 @@ export default function WhisperAI() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#09090B] shadow-[-20px_0_60px_rgba(0,0,0,0.8)] border-l border-white/5">
-      <div className="p-8 pb-6 flex items-center justify-between border-b border-white/5 bg-black/20">
+    <div className="flex flex-col h-full bg-black border border-teal-500/30 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(20,184,166,0.05)]">
+      <div className="p-6 flex items-center justify-between border-b border-teal-500/10 bg-black/40">
         <div className="flex items-center gap-4">
-          <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-            <Zap size={16} className="text-indigo-400" />
+          <div className="p-2.5 rounded-xl bg-teal-500/5 border border-teal-500/20">
+            <Zap size={16} className="text-teal-400" />
           </div>
           <div className="space-y-0.5">
             <h3 className="text-[10px] uppercase tracking-[0.4em] font-bold text-white">Neural Mentor</h3>
-            <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-medium">Clear Focus Interface</p>
+            <p className="text-[9px] text-teal-500/60 uppercase tracking-widest font-medium">Protocol Active</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/40 animate-pulse" />
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 animate-pulse delay-150" />
+        <div className="flex gap-2 opacity-40">
+          <div className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
+          <div className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse delay-150" />
         </div>
       </div>
 
@@ -69,11 +69,11 @@ export default function WhisperAI() {
         {messages.length === 0 && (
           <div className="h-full flex items-center justify-center text-center">
             <div className="space-y-6">
-              <div className="w-24 h-24 rounded-full border border-white/5 bg-white/[0.02] mx-auto flex items-center justify-center">
-                <Brain size={32} className="text-zinc-800" />
+              <div className="w-24 h-24 rounded-full border border-teal-500/10 bg-teal-500/5 mx-auto flex items-center justify-center">
+                <Brain size={32} className="text-teal-900" />
               </div>
-              <p className="text-[10px] text-zinc-600 leading-loose uppercase tracking-[0.6em] font-light max-w-[160px] mx-auto">
-                Consult the mentor. Interrogate the link.
+              <p className="text-[10px] text-teal-800 leading-loose uppercase tracking-[0.6em] font-bold max-w-[160px] mx-auto">
+                Consult the mentor. <br/> Interrogate the link.
               </p>
             </div>
           </div>
@@ -86,10 +86,10 @@ export default function WhisperAI() {
             animate={{ opacity: 1, y: 0 }}
             className={`flex gap-6 ${m.role === "assistant" ? "" : "flex-row-reverse"}`}
           >
-            <div className={`mt-1 h-10 w-10 rounded-2xl flex items-center justify-center border border-white/5 ${m.role === "assistant" ? "bg-white/[0.03]" : "bg-indigo-500/10 border-indigo-500/20"}`}>
-              {m.role === "assistant" ? <Zap size={14} className="text-zinc-500" /> : <User size={14} className="text-indigo-400" />}
+            <div className={`mt-1 h-10 w-10 rounded-2xl flex items-center justify-center border border-teal-500/10 ${m.role === "assistant" ? "bg-black" : "bg-teal-500/5"}`}>
+              {m.role === "assistant" ? <Zap size={14} className="text-teal-700" /> : <User size={14} className="text-teal-400" />}
             </div>
-            <div className={`max-w-[80%] text-[13px] leading-relaxed p-5 rounded-[24px] ${m.role === "assistant" ? "text-zinc-300 bg-white/[0.02] border border-white/5" : "text-zinc-100 bg-indigo-500/10 border border-indigo-500/20 shadow-xl"}`}>
+            <div className={`max-w-[80%] text-[13px] leading-relaxed p-5 rounded-[20px] ${m.role === "assistant" ? "text-zinc-400 bg-black border border-teal-500/10" : "text-white bg-teal-500/5 border border-teal-500/20 shadow-[0_0_20px_rgba(20,184,166,0.05)]"}`}>
               {m.content}
             </div>
           </motion.div>
@@ -97,19 +97,19 @@ export default function WhisperAI() {
         
         {isLoading && (
           <div className="flex gap-6">
-            <div className="h-10 w-10 rounded-2xl flex items-center justify-center border border-white/5 bg-white/[0.03] animate-pulse">
-              <Zap size={14} className="text-zinc-700" />
+            <div className="h-10 w-10 rounded-2xl flex items-center justify-center border border-teal-500/10 bg-black animate-pulse">
+              <Zap size={14} className="text-teal-900" />
             </div>
-            <div className="flex gap-2.5 items-center px-4 opacity-40">
-              <div className="w-1.5 h-1.5 bg-zinc-600 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-              <div className="w-1.5 h-1.5 bg-zinc-600 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-              <div className="w-1.5 h-1.5 bg-zinc-600 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+            <div className="flex gap-2.5 items-center px-4">
+              <div className="w-1.5 h-1.5 bg-teal-900 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+              <div className="w-1.5 h-1.5 bg-teal-900 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+              <div className="w-1.5 h-1.5 bg-teal-900 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
             </div>
           </div>
         )}
       </div>
 
-      <div className="p-8 pt-4 bg-transparent">
+      <div className="p-8 pt-4 bg-black border-t border-teal-500/10">
         <div className="relative flex items-center group">
           <input
             type="text"
@@ -117,14 +117,14 @@ export default function WhisperAI() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
             placeholder="Interrogate neural link..."
-            className="w-full bg-white/[0.03] border border-white/5 rounded-[24px] py-5 px-8 text-sm text-white placeholder:text-zinc-700 focus:outline-none focus:border-white/10 focus:bg-white/[0.05] transition-all font-light shadow-2xl"
+            className="w-full bg-black border border-teal-500/20 rounded-[18px] py-5 px-8 text-sm text-white placeholder:text-zinc-800 focus:outline-none focus:border-teal-500/40 focus:bg-teal-500/[0.02] transition-all font-light"
           />
           <button
             onClick={sendMessage}
             disabled={isLoading}
-            className="absolute right-4 p-3.5 hover:bg-white/10 rounded-2xl transition-all group active:scale-90"
+            className="absolute right-4 p-3.5 hover:bg-teal-500/10 rounded-2xl transition-all group active:scale-90"
           >
-            <Send size={18} className="text-zinc-600 group-hover:text-indigo-400 transition-colors" />
+            <Send size={18} className="text-teal-900 group-hover:text-teal-400 transition-colors" />
           </button>
         </div>
       </div>

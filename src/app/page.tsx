@@ -114,63 +114,85 @@ export default function Home() {
             )}
           </AnimatePresence>
 
-          {/* HUD - Subtle Timer Fixed Top Right */}
-          <div className="absolute top-8 right-8 z-10 w-48 h-48 opacity-40 hover:opacity-100 transition-opacity">
-            <ZenRingTimer 
-              isPlaying={playerState === 1 && !isHardStop} 
-              onReachHardStop={handleHardStop}
-              maxMinutes={focusDuration}
-            />
-          </div>
+          {/* Master Dock - Draggable Bottom Center */}
+          <motion.div
+            drag
+            dragConstraints={{ left: -500, right: 500, top: -500, bottom: 0 }}
+            initial={{ y: 100, x: "-50%", opacity: 0 }}
+            animate={{ y: -40, x: "-50%", opacity: 1 }}
+            className="absolute bottom-0 left-1/2 z-50 flex items-center gap-6 p-3 bg-black border border-teal-500/30 rounded-[28px] shadow-[0_30px_60px_-15px_rgba(0,0,0,1)]"
+          >
+            {/* Drag Handle */}
+            <div className="pl-3 flex flex-col gap-1 opacity-20 cursor-grab active:cursor-grabbing">
+              <div className="w-1 h-1 rounded-full bg-teal-400" />
+              <div className="w-1 h-1 rounded-full bg-teal-400" />
+              <div className="w-1 h-1 rounded-full bg-teal-400" />
+            </div>
 
-          {/* Floating Action Buttons (FABs) */}
-          <div className="absolute bottom-8 right-8 z-50 flex flex-col gap-4">
-            <ZenMusic />
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setActivePanel(activePanel === "ai" ? null : "ai")}
-              className={`p-5 rounded-full bg-[#0C0C0E] border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.8)] transition-all ${activePanel === "ai" ? "bg-[#121214] border-white/20" : ""}`}
-            >
-              <Sparkles size={24} className={activePanel === "ai" ? "text-indigo-400" : "text-zinc-500"} />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setActivePanel(activePanel === "notes" ? null : "notes")}
-              className={`p-5 rounded-full bg-[#0C0C0E] border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.8)] transition-all ${activePanel === "notes" ? "bg-[#121214] border-white/20" : ""}`}
-            >
-              <NoteIcon size={24} className={activePanel === "notes" ? "text-emerald-400" : "text-zinc-500"} />
-            </motion.button>
-          </div>
+            <div className="flex items-center gap-4 pr-3 border-r border-teal-500/10">
+              <ZenRingTimer 
+                isPlaying={playerState === 1 && !isHardStop} 
+                onReachHardStop={handleHardStop}
+                maxMinutes={focusDuration}
+              />
+            </div>
 
-          {/* AI Drawer */}
+            <div className="flex items-center gap-3 pr-2">
+              <ZenMusic />
+              
+              <button
+                onClick={() => setActivePanel(activePanel === "ai" ? null : "ai")}
+                className={`p-4 rounded-2xl bg-black border border-teal-500/10 transition-all ${activePanel === "ai" ? "bg-teal-500/10 border-teal-500/40" : "hover:bg-white/5"}`}
+              >
+                <Sparkles size={20} className={activePanel === "ai" ? "text-teal-400" : "text-teal-900"} />
+              </button>
+
+              <button
+                onClick={() => setActivePanel(activePanel === "notes" ? null : "notes")}
+                className={`p-4 rounded-2xl bg-black border border-teal-500/10 transition-all ${activePanel === "notes" ? "bg-teal-500/10 border-teal-500/40" : "hover:bg-white/5"}`}
+              >
+                <NoteIcon size={20} className={activePanel === "notes" ? "text-teal-400" : "text-teal-900"} />
+              </button>
+            </div>
+          </motion.div>
+
+          {/* AI Panel - Bottom Right Overlay */}
           <AnimatePresence>
             {activePanel === "ai" && (
-              <>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+              <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                className="absolute bottom-32 right-8 h-[500px] w-[400px] z-50 bg-black border border-teal-500/20 rounded-3xl shadow-[0_50px_100px_rgba(0,0,0,1)]"
+              >
+                <WhisperAI />
+                <button 
                   onClick={() => setActivePanel(null)}
-                  className="absolute inset-0 bg-black/40 backdrop-blur-sm z-40"
-                />
-                <motion.div
-                  initial={{ x: "100%" }}
-                  animate={{ x: 0 }}
-                  exit={{ x: "100%" }}
-                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                  className="absolute top-0 right-0 h-full w-full max-w-md z-50 bg-[#09090B] border-l border-white/10 shadow-[-40px_0_80px_rgba(0,0,0,0.9)]"
+                  className="absolute -top-3 -right-3 p-2 bg-black rounded-full border border-teal-500/30 text-teal-500 hover:text-white transition-all shadow-xl"
                 >
-                  <WhisperAI />
-                  <button 
-                    onClick={() => setActivePanel(null)}
-                    className="absolute top-6 left-[-60px] p-4 bg-[#121214] rounded-full border border-white/10 hover:bg-white/5 active:scale-90 transition-all shadow-2xl"
-                  >
-                    <X size={20} className="text-zinc-500" />
-                  </button>
-                </motion.div>
-              </>
+                  <X size={14} />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Notes Panel - Bottom Left Overlay */}
+          <AnimatePresence>
+            {activePanel === "notes" && (
+              <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                className="absolute bottom-32 left-8 h-[400px] w-[350px] z-50"
+              >
+                <StickyNotes />
+                <button 
+                  onClick={() => setActivePanel(null)}
+                  className="absolute -top-3 -right-3 p-2 bg-black rounded-full border border-teal-500/30 text-teal-500 hover:text-white transition-all shadow-xl"
+                >
+                  <X size={14} />
+                </button>
+              </motion.div>
             )}
           </AnimatePresence>
 
