@@ -111,7 +111,7 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
       
       <button
         onClick={toggleFullscreen}
-        className="absolute bottom-4 right-4 z-[9000] bg-black/50 backdrop-blur-md p-2 rounded-lg border border-white/10 hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100 pointer-events-auto"
+        className="absolute bottom-4 right-4 z-[9000] bg-black/50 backdrop-blur-md p-2 rounded-lg border border-white/10 hover:bg-black/70 transition-all md:opacity-0 md:group-hover:opacity-100 opacity-100 pointer-events-auto"
       >
         {isFullscreen ? <Minimize size={20} className="text-white" /> : <Maximize size={20} className="text-white" />}
       </button>
@@ -121,7 +121,7 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-[120px] overflow-hidden"
+            className="absolute inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl md:backdrop-blur-[120px] overflow-hidden"
           >
             <div className="text-center p-4 md:p-12 max-w-lg w-full flex flex-col items-center justify-center h-full">
               <div className="flex flex-row items-center gap-3 md:gap-4 mb-4 md:mb-8">

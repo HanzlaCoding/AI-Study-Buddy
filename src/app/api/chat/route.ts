@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json({ error: "Neural link key missing. Protocol offline." }, { status: 500 });
     }
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const systemPrompt = `You are an elite, highly logical mentor for an 18-year-old ICS student preparing for Lahore Board exams. 
     Expertise: C Programming and Physics. 
