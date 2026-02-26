@@ -24,19 +24,18 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<"ai" | "notes" | "music">("ai");
   const [showControls, setShowControls] = useState(true);
   const [focusDuration, setFocusDuration] = useState(50); // Default 50m
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showBreakModal, setShowBreakModal] = useState(false);
   const [isBreakMode, setIsBreakMode] = useState(false);
 
   // Sync AudioContext panel state
   useEffect(() => {
-    setIsPanelOpen(activeTab === "music" && (!isMobileMenuOpen || window.innerWidth >= 768));
+    setIsPanelOpen(activeTab === "music");
     
     // Clear the notification dot when the user explicitly views the notes panel
     if (activeTab === "notes") {
       setHasNewNote(false);
     }
-  }, [activeTab, isMobileMenuOpen, setIsPanelOpen, setHasNewNote]);
+  }, [activeTab, setIsPanelOpen, setHasNewNote]);
 
   // Idle HUD Hide Logic
   useEffect(() => {
@@ -94,7 +93,7 @@ export default function Home() {
       // Trigger Celebration
       confetti({
         particleCount: 150,
-        spread: 100,
+        spread: window.innerWidth < 768 ? 60 : 100,
         origin: { y: 0.8 },
         colors: ["#8c25f4", "#34D399", "#d946ef", "#FBBF24"]
       });
@@ -126,7 +125,7 @@ export default function Home() {
           key="flow"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex h-screen w-screen bg-[#09090B] overflow-hidden selection:bg-[#8c25f4]/20 font-sans relative"
+          className="flex flex-col md:flex-row h-[100dvh] w-full bg-[#09090B] overflow-hidden selection:bg-[#8c25f4]/20 font-sans relative"
         >
           {/* Aurora Orbs */}
           <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-900/20 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0" />
@@ -177,30 +176,20 @@ export default function Home() {
           </AnimatePresence>
 
           {/* [Section A] Main Cinematic Video Section (70%) */}
-          <section className="relative z-[1] overflow-hidden w-full md:w-[70%] h-full">
+          <section className="relative z-[1] overflow-hidden w-full h-[70dvh] md:h-full md:w-[70%]">
             <YouTubePlayer 
               videoId={videoId} 
               onStateChange={handleStateChange}
             >
               {/* Floating Gamified Timer (Visible in Fullscreen) */}
-              <div className="absolute top-8 left-1/2 -translate-x-1/2 z-[300] bg-[#0C0C0E]/90 backdrop-blur-xl border border-white/10 shadow-2xl rounded-full px-8 py-3 flex items-center justify-center pointer-events-auto">
-                <div className="w-32 h-8">
+              <div className="absolute top-4 right-4 md:top-8 md:right-auto md:left-1/2 md:-translate-x-1/2 z-[300] bg-[#0C0C0E]/90 backdrop-blur-xl border border-white/10 shadow-2xl rounded-full px-4 py-2 md:px-8 md:py-3 flex items-center justify-center pointer-events-auto text-sm md:text-base">
+                <div className="w-24 h-6 md:w-32 md:h-8">
                   <ZenRingTimer 
                      isPlaying={playerState === 1 && !isHardStop} 
                      onReachHardStop={handleHardStop}
                      maxMinutes={focusDuration}
                   />
                 </div>
-              </div>
-
-              {/* Mobile Sidebar Toggle (Floating Action Button) */}
-              <div className="absolute top-8 right-8 z-[100] md:hidden pointer-events-auto">
-                <button 
-                  onClick={() => setIsMobileMenuOpen(true)}
-                  className="w-14 h-14 rounded-3xl bg-[#0C0C0E]/90 backdrop-blur-2xl border border-white/10 flex items-center justify-center text-[#8c25f4] shadow-[0_20px_40px_rgba(0,0,0,0.6)] active:scale-95 transition-all"
-                >
-                  <Sparkles size={24} />
-                </button>
               </div>
 
               {/* Hard Stop Overlay (Scoped to Video) */}
@@ -240,28 +229,10 @@ export default function Home() {
           <AnimatePresence>
             <motion.aside 
               initial={false}
-              animate={typeof window !== "undefined" && window.innerWidth < 768 ? { 
-                x: isMobileMenuOpen ? 0 : "100%",
-                opacity: 1
-              } : { 
-                x: 0,
-                opacity: 1
-              }}
-              transition={{ type: "spring", damping: 30, stiffness: 200 }}
-              className={`fixed md:relative inset-y-0 right-0 w-[90%] md:w-[30%] flex z-[200] md:z-20 bg-[#09090B]/60 backdrop-blur-2xl border-l border-white/10 shadow-[inset_1px_0_20px_rgba(255,255,255,0.02)] overflow-hidden transition-all duration-300 ${!isMobileMenuOpen && "pointer-events-none md:pointer-events-auto"}`}
+              className="relative flex flex-col-reverse md:flex-row h-[30dvh] md:h-full w-full md:w-[30%] z-[200] md:z-20 bg-[#09090B]/60 backdrop-blur-2xl border-t md:border-t-0 md:border-l border-white/10 shadow-[inset_1px_0_20px_rgba(255,255,255,0.02)] overflow-hidden"
             >
               {/* Main Content Area (Left side of sidebar) */}
-              <div className="flex-1 flex flex-col h-full overflow-hidden">
-                {/* Mobile Close Button */}
-                <div className="md:hidden p-6 border-b border-white/5 bg-transparent flex items-center justify-between">
-                  <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">Menu</span>
-                  <button 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-3 rounded-2xl bg-white/5 text-zinc-400 hover:text-white transition-colors duration-300"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
+              <div className="flex-1 flex flex-col h-full overflow-hidden overscroll-none">
 
                 {/* Sidebar Bottom: Dynamic Tool Viewport */}
                 <div className="flex-1 relative overflow-hidden bg-transparent">
@@ -306,8 +277,8 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Vertical Navigation Strip (Right side) */}
-              <nav className="w-16 md:w-20 shrink-0 border-l border-white/5 flex flex-col items-center py-8 gap-4 z-10 bg-transparent">
+              {/* Navigation Strip */}
+              <nav className="flex flex-row md:flex-col justify-around md:justify-start items-center h-14 md:h-full w-full md:w-20 shrink-0 border-t md:border-t-0 md:border-l border-white/5 bg-[#09090B]/90 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none pb-safe md:pb-0 md:py-8 gap-0 md:gap-4 z-10 px-4 md:px-0">
                 <button
                   onClick={() => setActiveTab("ai")}
                   className={`relative p-3 rounded-xl transition-all duration-300 group ${activeTab === "ai" ? "bg-white/10 text-zinc-100" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"}`}
@@ -327,7 +298,7 @@ export default function Home() {
                   )}
                 </button>
 
-                <div className="w-8 h-px bg-white/5 my-2" /> {/* Divider */}
+                <div className="hidden md:block w-8 h-px bg-white/5 my-2" /> {/* Divider */}
 
                 <button
                   onClick={() => setActiveTab("music")}
@@ -338,23 +309,11 @@ export default function Home() {
                 </button>
               </nav>
             </motion.aside>
-            
-            {/* Mobile Backdrop */}
-            {isMobileMenuOpen && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] md:hidden"
-              />
-            )}
           </AnimatePresence>
 
           {/* Floating Audio Mini-Player */}
           <FloatingMiniPlayer onExpand={() => {
             setActiveTab("music");
-            if (window.innerWidth < 768) setIsMobileMenuOpen(true);
           }} />
 
         </motion.main>
