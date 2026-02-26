@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ZenRingTimerProps {
@@ -10,99 +10,66 @@ interface ZenRingTimerProps {
 }
 
 export default function ZenRingTimer({ isPlaying, onReachHardStop, maxMinutes = 50 }: ZenRingTimerProps) {
-  const [ms, setMs] = useState(0);
-  const timerRef = useRef<number | null>(null);
+  const [seconds, setSeconds] = useState(0);
+  const PULSE_MINUTE = Math.floor(maxMinutes * 0.9); // Pulse at 90% completion
 
   useEffect(() => {
+    let interval: NodeJS.Timeout;
     if (isPlaying) {
-      const startTime = Date.now() - ms;
-      const tick = () => {
-        const currentMs = Date.now() - startTime;
-        if (currentMs >= maxMinutes * 60 * 1000) {
-          setMs(maxMinutes * 60 * 1000);
-          onReachHardStop();
-          return;
-        }
-        setMs(currentMs);
-        timerRef.current = requestAnimationFrame(tick);
-      };
-      timerRef.current = requestAnimationFrame(tick);
-    } else {
-      if (timerRef.current) cancelAnimationFrame(timerRef.current);
+      interval = setInterval(() => {
+        setSeconds((s) => {
+          const next = s + 1;
+          if (next >= maxMinutes * 60) {
+            onReachHardStop();
+            return s;
+          }
+          return next;
+        });
+      }, 1000);
     }
-    return () => {
-      if (timerRef.current) cancelAnimationFrame(timerRef.current);
-    };
+    return () => clearInterval(interval);
   }, [isPlaying, onReachHardStop, maxMinutes]);
 
-  const progress = (ms / (maxMinutes * 60 * 1000)) * 100;
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  const centiseconds = Math.floor((ms % 1000) / 10);
+  const progress = (seconds / (maxMinutes * 60)) * 100;
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  const isPulsing = (seconds / 60) >= PULSE_MINUTE && isPlaying;
 
-  const radius = 65;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (progress / 100) * circumference;
-
+  const radius = 70;
   return (
-    <div className="flex items-center gap-6 p-4 bg-black border border-teal-500/30 rounded-2xl shadow-[0_0_30px_rgba(20,184,166,0.1)] group">
-      {/* Drag Handle */}
-      <div className="flex flex-col gap-1 opacity-20 group-hover:opacity-40 transition-opacity cursor-grab active:cursor-grabbing">
-        <div className="w-1 h-1 rounded-full bg-teal-400" />
-        <div className="w-1 h-1 rounded-full bg-teal-400" />
-        <div className="w-1 h-1 rounded-full bg-teal-400" />
-      </div>
-
-      <div className="relative w-24 h-24">
-        <svg className="w-full h-full transform -rotate-90">
-          <circle
-            cx="48"
-            cy="48"
-            r={radius}
-            stroke="currentColor"
-            strokeWidth="3"
-            fill="transparent"
-            className="text-white/5"
-            strokeDasharray="1, 8"
+    <div className="relative w-full h-full flex items-center justify-center font-sans tracking-tight">
+      {/* Pulsing Overlay */}
+      <AnimatePresence>
+        {isPulsing && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: [0, 0.2, 0], scale: [0.8, 1.3, 0.8] }}
+            transition={{ repeat: Infinity, duration: 4 }}
+            className="absolute inset-0 rounded-full bg-red-500/10 blur-xl pointer-events-none"
           />
-          <motion.circle
-            cx="48"
-            cy="48"
-            r={radius}
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            fill="transparent"
-            strokeDasharray={circumference}
-            initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset: offset }}
-            transition={{ duration: 0.1, ease: "linear" }}
-            className="text-teal-400 drop-shadow-[0_0_8px_rgba(45,212,191,0.5)]"
-          />
-        </svg>
+        )}
+      </AnimatePresence>
 
-        <div className="absolute inset-0 flex items-center justify-center flex-col">
-          <div className="flex items-baseline gap-0.5 text-white font-mono tabular-nums">
-            <span className="text-xl font-bold">{minutes.toString().padStart(2, '0')}</span>
-            <span className="text-teal-500/50 text-xs">:</span>
-            <span className="text-xl font-bold">{seconds.toString().padStart(2, '0')}</span>
-            <span className="text-[10px] text-teal-400/60 ml-0.5">.{centiseconds.toString().padStart(2, '0')}</span>
+      {/* Center Info - HH:MM:SS */}
+      <div className="flex flex-col items-center">
+        <div className="flex items-baseline gap-1">
+          {h > 0 && (
+            <div className="flex items-baseline">
+              <span className="text-xl md:text-2xl font-bold text-white tracking-tighter w-8 text-center">{h}</span>
+              <span className="text-[10px] md:text-xs text-zinc-500 font-bold mr-2">H</span>
+            </div>
+          )}
+          <div className="flex items-baseline">
+            <span className="text-xl md:text-2xl font-bold text-white tracking-tighter w-8 text-center">{String(m).padStart(2, '0')}</span>
+            <span className="text-[10px] md:text-xs text-zinc-500 font-bold mr-2">M</span>
           </div>
-        </div>
-      </div>
-      
-      <div className="space-y-1">
-        <p className="text-[10px] text-teal-500/80 uppercase tracking-[0.3em] font-black">Neural Lock</p>
-        <div className="h-1 w-20 bg-white/5 rounded-full overflow-hidden">
-          <motion.div 
-            style={{ width: `${progress}%` }}
-            className="h-full bg-teal-400"
-          />
+          <div className="flex items-baseline">
+            <span className="text-xl md:text-2xl font-medium text-white tabular-nums w-8 text-center">{String(s).padStart(2, '0')}</span>
+            <span className="text-[10px] md:text-xs text-zinc-500 font-bold">S</span>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
-

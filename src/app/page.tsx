@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, StickyNote as NoteIcon, X, Headphones } from "lucide-react";
+import { Sparkles, StickyNote as NoteIcon, X, Headphones, Zap } from "lucide-react";
 import confetti from "canvas-confetti";
 import YouTubePlayer from "@/components/YouTubePlayer";
 import ZenRingTimer from "@/components/ZenRingTimer";
@@ -10,13 +10,65 @@ import StickyNotes from "@/components/StickyNotes";
 import WhisperAI from "@/components/WhisperAI";
 import Gateway from "@/components/Gateway";
 import ZenMusic from "@/components/ZenMusic";
+import LiquidGradient from "@/components/LiquidGradient";
+import FloatingMiniPlayer from "@/components/FloatingMiniPlayer";
+import { useAudio } from "@/context/AudioContext";
+import { useNotes } from "@/context/NotesContext";
 
 export default function Home() {
+  const { setIsPanelOpen } = useAudio();
+  const { hasNewNote, setHasNewNote } = useNotes();
   const [videoId, setVideoId] = useState<string | null>(null);
   const [playerState, setPlayerState] = useState(-1);
   const [isHardStop, setIsHardStop] = useState(false);
-  const [activePanel, setActivePanel] = useState<"ai" | "notes" | "music" | null>(null);
+  const [activeTab, setActiveTab] = useState<"ai" | "notes" | "music">("ai");
+  const [showControls, setShowControls] = useState(true);
   const [focusDuration, setFocusDuration] = useState(50); // Default 50m
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showBreakModal, setShowBreakModal] = useState(false);
+  const [isBreakMode, setIsBreakMode] = useState(false);
+
+  // Sync AudioContext panel state
+  useEffect(() => {
+    setIsPanelOpen(activeTab === "music" && (!isMobileMenuOpen || window.innerWidth >= 768));
+    
+    // Clear the notification dot when the user explicitly views the notes panel
+    if (activeTab === "notes") {
+      setHasNewNote(false);
+    }
+  }, [activeTab, isMobileMenuOpen, setIsPanelOpen, setHasNewNote]);
+
+  // Idle HUD Hide Logic
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    const handleActivity = () => {
+      setShowControls(true);
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        // Only hide if focused (playing), not stopped, and no utility windows are open
+        // Only hide if focused (playing), not stopped, and no specific utility tab is active (if you want that behavior)
+        if (playerState === 1 && !isHardStop) {
+          setShowControls(false);
+        }
+      }, 3000);
+    };
+
+    if (videoId) {
+      window.addEventListener("mousemove", handleActivity);
+      window.addEventListener("mousedown", handleActivity);
+      window.addEventListener("touchstart", handleActivity);
+      window.addEventListener("keydown", handleActivity);
+      handleActivity();
+    }
+
+    return () => {
+      window.removeEventListener("mousemove", handleActivity);
+      window.removeEventListener("mousedown", handleActivity);
+      window.removeEventListener("touchstart", handleActivity);
+      window.removeEventListener("keydown", handleActivity);
+      clearTimeout(timeout);
+    };
+  }, [videoId, playerState, isHardStop]);
 
   const extractVideoId = (url: string) => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -35,14 +87,24 @@ export default function Home() {
 
   const handleHardStop = useCallback(() => {
     setIsHardStop(true);
-    // Trigger Celebration
-    confetti({
-      particleCount: 150,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ["#818CF8", "#34D399", "#22D3EE"]
-    });
-  }, []);
+    
+    // Only trigger modal and confetti if it was a focus session, not a break
+    if (!isBreakMode) {
+      setShowBreakModal(true);
+      // Trigger Celebration
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.8 },
+        colors: ["#8c25f4", "#34D399", "#d946ef", "#FBBF24"]
+      });
+    } else {
+      // Break is over, immediately reset back to focus mode setup without modal
+      setIsHardStop(false);
+      setIsBreakMode(false);
+      setFocusDuration(50); // reset to standard focus
+    }
+  }, [isBreakMode]);
 
   return (
     <AnimatePresence mode="wait">
@@ -64,176 +126,239 @@ export default function Home() {
           key="flow"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="relative h-screen w-screen bg-[#09090B] overflow-hidden selection:bg-white/10"
+          className="flex h-screen w-screen bg-[#09090B] overflow-hidden selection:bg-[#8c25f4]/20 font-sans relative"
         >
-          {/* Ambient Noise */}
-          <div className="noise opacity-10 pointer-events-none" />
+          {/* Aurora Orbs */}
+          <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-900/20 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-900/10 rounded-full blur-[120px] translate-x-1/3 translate-y-1/3 pointer-events-none z-0" />
 
-          {/* Cinematic Cinema Core */}
-          <div className="absolute inset-0 z-0">
-            <YouTubePlayer 
-              videoId={videoId} 
-              onStateChange={handleStateChange}
-            />
-          </div>
 
-          {/* Hard Stop Overlay */}
+
+          {/* Break Modal */}
           <AnimatePresence>
-            {isHardStop && (
+            {showBreakModal && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="absolute inset-0 z-[100] glass backdrop-blur-[120px] flex items-center justify-center"
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[400] bg-[#1E2024]/80 backdrop-blur-2xl border border-white/5 rounded-3xl p-10 flex flex-col items-center text-center max-w-[420px] w-[90%] shadow-[0_40px_100px_rgba(0,0,0,0.8)]"
               >
-                <div className="text-center p-12 max-w-xl">
-                  <motion.div
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: "spring", damping: 15 }}
-                    className="mb-8 p-6 glass rounded-full w-fit mx-auto border border-white/10"
-                  >
-                    <Sparkles size={48} className="text-indigo-400" />
-                  </motion.div>
-                  <h2 className="text-7xl font-bold text-white mb-8 tracking-tighter">Protocol Complete.</h2>
-                  <p className="text-zinc-400 text-lg leading-relaxed mb-12 font-light">
-                    Neural pathways fully calibrated. Focus session successfully materialized. Enjoy the clarity.
-                  </p>
-                  <div className="flex flex-col items-center gap-6">
-                    <button 
-                      onClick={() => setIsHardStop(false)}
-                      className="px-10 py-4 rounded-full bg-white text-black text-[10px] uppercase tracking-[0.5em] font-bold hover:scale-105 transition-all active:scale-95"
-                    >
-                      Resume Flow
-                    </button>
-                    <span className="text-[10px] text-zinc-500 uppercase tracking-[0.5em]">
-                      Session Duration: {focusDuration}m
-                    </span>
-                  </div>
+                <div className="w-16 h-16 rounded-full bg-[#2A2B33] flex items-center justify-center mb-6 text-3xl">
+                  🎉
+                </div>
+                <h3 className="text-[28px] font-bold text-white mb-3 tracking-tight">Incredible focus!</h3>
+                <p className="text-zinc-400 text-[15px] mb-8 leading-relaxed px-4">
+                  You unlocked a <span className="text-indigo-400 font-medium">5-minute break</span>.<br/>Stretch, breathe, and grab some water.
+                </p>
+                <div className="flex flex-col gap-4 w-full px-2">
+                   <button 
+                     onClick={() => {
+                        setShowBreakModal(false);
+                        setIsHardStop(false);
+                        setIsBreakMode(true);
+                        setFocusDuration(5); // 5 min break
+                     }}
+                     className="w-full py-4 rounded-xl bg-white text-black font-semibold hover:bg-zinc-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.15)] text-[15px]"
+                   >
+                     Start Break Timer
+                   </button>
+                   <button 
+                     onClick={() => {
+                        setShowBreakModal(false);
+                        setIsHardStop(false);
+                     }}
+                     className="w-full py-3 text-[#5A6076] hover:text-zinc-300 font-medium transition-colors text-sm"
+                   >
+                     Skip break and keep working
+                   </button>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Master Dock - Draggable Bottom Center */}
-          <motion.div
-            drag
-            dragConstraints={{ left: -500, right: 500, top: -500, bottom: 0 }}
-            initial={{ y: 100, x: "-50%", opacity: 0 }}
-            animate={{ y: -40, x: "-50%", opacity: 1 }}
-            className="absolute bottom-0 left-1/2 z-50 flex items-center gap-6 p-3 bg-black border border-teal-500/30 rounded-[28px] shadow-[0_30px_60px_-15px_rgba(0,0,0,1)]"
-          >
-            {/* Drag Handle */}
-            <div className="pl-3 flex flex-col gap-1 opacity-20 cursor-grab active:cursor-grabbing">
-              <div className="w-1 h-1 rounded-full bg-teal-400" />
-              <div className="w-1 h-1 rounded-full bg-teal-400" />
-              <div className="w-1 h-1 rounded-full bg-teal-400" />
-            </div>
+          {/* [Section A] Main Cinematic Video Section (70%) */}
+          <section className="relative z-[1] overflow-hidden w-full md:w-[70%] h-full">
+            <YouTubePlayer 
+              videoId={videoId} 
+              onStateChange={handleStateChange}
+            >
+              {/* Floating Gamified Timer (Visible in Fullscreen) */}
+              <div className="absolute top-8 left-1/2 -translate-x-1/2 z-[300] bg-[#0C0C0E]/90 backdrop-blur-xl border border-white/10 shadow-2xl rounded-full px-8 py-3 flex items-center justify-center pointer-events-auto">
+                <div className="w-32 h-8">
+                  <ZenRingTimer 
+                     isPlaying={playerState === 1 && !isHardStop} 
+                     onReachHardStop={handleHardStop}
+                     maxMinutes={focusDuration}
+                  />
+                </div>
+              </div>
 
-            <div className="flex items-center gap-4 pr-3 border-r border-teal-500/10">
-              <ZenRingTimer 
-                isPlaying={playerState === 1 && !isHardStop} 
-                onReachHardStop={handleHardStop}
-                maxMinutes={focusDuration}
-              />
-            </div>
-
-            <div className="flex items-center gap-3 pr-2">
-              <ZenMusic />
-              
-              <button
-                onClick={() => setActivePanel(activePanel === "ai" ? null : "ai")}
-                className={`p-4 rounded-2xl bg-black border border-teal-500/10 transition-all ${activePanel === "ai" ? "bg-teal-500/10 border-teal-500/40" : "hover:bg-white/5"}`}
-              >
-                <Sparkles size={20} className={activePanel === "ai" ? "text-teal-400" : "text-teal-900"} />
-              </button>
-
-              <button
-                onClick={() => setActivePanel(activePanel === "notes" ? null : "notes")}
-                className={`p-4 rounded-2xl bg-black border border-teal-500/10 transition-all ${activePanel === "notes" ? "bg-teal-500/10 border-teal-500/40" : "hover:bg-white/5"}`}
-              >
-                <NoteIcon size={20} className={activePanel === "notes" ? "text-teal-400" : "text-teal-900"} />
-              </button>
-            </div>
-          </motion.div>
-
-          {/* AI Panel - Bottom Right Overlay */}
-          <AnimatePresence>
-            {activePanel === "ai" && (
-              <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                className="absolute bottom-32 right-8 h-[500px] w-[400px] z-50 bg-black border border-teal-500/20 rounded-3xl shadow-[0_50px_100px_rgba(0,0,0,1)]"
-              >
-                <WhisperAI />
+              {/* Mobile Sidebar Toggle (Floating Action Button) */}
+              <div className="absolute top-8 right-8 z-[100] md:hidden pointer-events-auto">
                 <button 
-                  onClick={() => setActivePanel(null)}
-                  className="absolute -top-3 -right-3 p-2 bg-black rounded-full border border-teal-500/30 text-teal-500 hover:text-white transition-all shadow-xl"
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className="w-14 h-14 rounded-3xl bg-[#0C0C0E]/90 backdrop-blur-2xl border border-white/10 flex items-center justify-center text-[#8c25f4] shadow-[0_20px_40px_rgba(0,0,0,0.6)] active:scale-95 transition-all"
                 >
-                  <X size={14} />
+                  <Sparkles size={24} />
                 </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
 
-          {/* Notes Panel - Bottom Left Overlay */}
-          <AnimatePresence>
-            {activePanel === "notes" && (
-              <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                className="absolute bottom-32 left-8 h-[400px] w-[350px] z-50"
-              >
-                <StickyNotes />
-                <button 
-                  onClick={() => setActivePanel(null)}
-                  className="absolute -top-3 -right-3 p-2 bg-black rounded-full border border-teal-500/30 text-teal-500 hover:text-white transition-all shadow-xl"
-                >
-                  <X size={14} />
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Notes Floating Modal */}
-          <AnimatePresence>
-            {activePanel === "notes" && (
-              <>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={() => setActivePanel(null)}
-                  className="absolute inset-0 bg-black/20 z-40"
-                />
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                  className="absolute bottom-24 right-24 w-[400px] h-[300px] z-50"
-                >
-                  <StickyNotes />
-                  <button 
-                    onClick={() => setActivePanel(null)}
-                    className="absolute -top-3 -right-3 p-2 glass rounded-full border border-white/10 hover:bg-white/5 shadow-xl"
+              {/* Hard Stop Overlay (Scoped to Video) */}
+              <AnimatePresence>
+                {isHardStop && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="absolute inset-0 z-[100] backdrop-blur-[120px] bg-black/80 flex items-center justify-center p-8 text-center pointer-events-auto"
                   >
-                    <X size={14} className="text-zinc-500" />
+                    <div className="max-w-xl">
+                      <motion.div
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="mb-8 p-6 glass rounded-full w-fit mx-auto border border-white/10"
+                      >
+                        <Sparkles size={48} className="text-[#8c25f4]" />
+                      </motion.div>
+                      <h2 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tighter">Protocol Complete.</h2>
+                      <p className="text-zinc-400 text-base md:text-lg leading-relaxed mb-10 font-light italic">
+                        Neural pathways fully calibrated. Focus session successfully materialized.
+                      </p>
+                      <button 
+                        onClick={() => setIsHardStop(false)}
+                        className="px-12 py-5 rounded-full bg-white text-black text-[10px] uppercase tracking-[0.5em] font-black hover:scale-105 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)]"
+                      >
+                        Resume Flow
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </YouTubePlayer>
+          </section>
+
+          {/* [Section B] Routed Utility Sidebar (Responsive Drawer) (30%) */}
+          <AnimatePresence>
+            <motion.aside 
+              initial={false}
+              animate={typeof window !== "undefined" && window.innerWidth < 768 ? { 
+                x: isMobileMenuOpen ? 0 : "100%",
+                opacity: 1
+              } : { 
+                x: 0,
+                opacity: 1
+              }}
+              transition={{ type: "spring", damping: 30, stiffness: 200 }}
+              className={`fixed md:relative inset-y-0 right-0 w-[90%] md:w-[30%] flex z-[200] md:z-20 bg-[#09090B]/60 backdrop-blur-2xl border-l border-white/10 shadow-[inset_1px_0_20px_rgba(255,255,255,0.02)] overflow-hidden transition-all duration-300 ${!isMobileMenuOpen && "pointer-events-none md:pointer-events-auto"}`}
+            >
+              {/* Main Content Area (Left side of sidebar) */}
+              <div className="flex-1 flex flex-col h-full overflow-hidden">
+                {/* Mobile Close Button */}
+                <div className="md:hidden p-6 border-b border-white/5 bg-transparent flex items-center justify-between">
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">Menu</span>
+                  <button 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-3 rounded-2xl bg-white/5 text-zinc-400 hover:text-white transition-colors duration-300"
+                  >
+                    <X size={20} />
                   </button>
-                </motion.div>
-              </>
+                </div>
+
+                {/* Sidebar Bottom: Dynamic Tool Viewport */}
+                <div className="flex-1 relative overflow-hidden bg-transparent">
+                  <AnimatePresence mode="wait">
+                    {activeTab === "ai" && (
+                      <motion.div
+                        key="ai"
+                        initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 1.02, y: -10 }}
+                        transition={{ duration: 0.4, ease: "circOut" }}
+                        className="h-full"
+                      >
+                        <WhisperAI />
+                      </motion.div>
+                    )}
+                    {activeTab === "notes" && (
+                      <motion.div
+                        key="notes"
+                        initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 1.02, y: -10 }}
+                        transition={{ duration: 0.4, ease: "circOut" }}
+                        className="h-full"
+                      >
+                        <StickyNotes />
+                      </motion.div>
+                    )}
+                    {activeTab === "music" && (
+                      <motion.div
+                        key="music"
+                        initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 1.02, y: -10 }}
+                        transition={{ duration: 0.4, ease: "circOut" }}
+                        className="h-full overflow-y-auto scrollbar-none"
+                      >
+                        <ZenMusic />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Vertical Navigation Strip (Right side) */}
+              <nav className="w-16 md:w-20 shrink-0 border-l border-white/5 flex flex-col items-center py-8 gap-4 z-10 bg-transparent">
+                <button
+                  onClick={() => setActiveTab("ai")}
+                  className={`relative p-3 rounded-xl transition-all duration-300 group ${activeTab === "ai" ? "bg-white/10 text-zinc-100" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"}`}
+                  title="Study Assistant"
+                >
+                  <Sparkles size={22} className="md:size-[24px]" />
+                </button>
+
+                <button
+                  onClick={() => setActiveTab("notes")}
+                  className={`relative p-3 rounded-xl transition-all duration-300 group ${activeTab === "notes" ? "bg-white/10 text-zinc-100" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"}`}
+                  title="Notes"
+                >
+                  <NoteIcon size={22} className="md:size-[24px]" />
+                  {hasNewNote && activeTab !== "notes" && (
+                    <span className="w-2 h-2 rounded-full bg-red-500 absolute top-2 right-2 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse" />
+                  )}
+                </button>
+
+                <div className="w-8 h-px bg-white/5 my-2" /> {/* Divider */}
+
+                <button
+                  onClick={() => setActiveTab("music")}
+                  className={`relative p-3 rounded-xl transition-all duration-300 group ${activeTab === "music" ? "bg-white/10 text-zinc-100" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"}`}
+                  title="Focus Audio"
+                >
+                  <Headphones size={22} className="md:size-[24px]" />
+                </button>
+              </nav>
+            </motion.aside>
+            
+            {/* Mobile Backdrop */}
+            {isMobileMenuOpen && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] md:hidden"
+              />
             )}
           </AnimatePresence>
 
-          {/* Neural Link Status Overlay */}
-          <div className="absolute bottom-10 left-10 flex items-center gap-3 pointer-events-none opacity-20 z-10 font-medium">
-            <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)] animate-pulse" />
-            <span className="text-[10px] text-white uppercase tracking-[0.5em]">Protocol: Flow</span>
-          </div>
+          {/* Floating Audio Mini-Player */}
+          <FloatingMiniPlayer onExpand={() => {
+            setActiveTab("music");
+            if (window.innerWidth < 768) setIsMobileMenuOpen(true);
+          }} />
+
         </motion.main>
       )}
     </AnimatePresence>
   );
 }
-
-

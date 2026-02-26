@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface YouTubePlayerProps {
   onStateChange: (state: number) => void;
   videoId: string;
+  children?: React.ReactNode;
 }
 
 declare global {
@@ -15,7 +16,7 @@ declare global {
   }
 }
 
-export default function YouTubePlayer({ onStateChange, videoId }: YouTubePlayerProps) {
+export default function YouTubePlayer({ onStateChange, videoId, children }: YouTubePlayerProps) {
   const playerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isFocusBroken, setIsFocusBroken] = useState(false);
@@ -37,6 +38,7 @@ export default function YouTubePlayer({ onStateChange, videoId }: YouTubePlayerP
           controls: 1,
           modestbranding: 1,
           rel: 0,
+          showinfo: 0,
         },
         events: {
           onStateChange: (event: any) => {
@@ -79,6 +81,7 @@ export default function YouTubePlayer({ onStateChange, videoId }: YouTubePlayerP
     <div ref={containerRef} className="relative w-full h-full overflow-hidden bg-black shadow-2xl">
       <div id="player" className="w-full h-full scale-[1.01]" /> {/* Slight scale to hide potential edges */}
       
+      {children}
       <AnimatePresence>
         {isFocusBroken && (
           <motion.div
