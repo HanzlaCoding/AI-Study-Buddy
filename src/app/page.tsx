@@ -2,18 +2,20 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, StickyNote as NoteIcon, X, Headphones, Zap } from "lucide-react";
+import { Sparkles, StickyNote as NoteIcon, X, Headphones } from "lucide-react";
+import dynamic from "next/dynamic";
 import confetti from "canvas-confetti";
-import YouTubePlayer from "@/components/YouTubePlayer";
-import ZenRingTimer from "@/components/ZenRingTimer";
-import StickyNotes from "@/components/StickyNotes";
-import WhisperAI from "@/components/WhisperAI";
-import Gateway from "@/components/Gateway";
-import ZenMusic from "@/components/ZenMusic";
-import LiquidGradient from "@/components/LiquidGradient";
-import FloatingMiniPlayer from "@/components/FloatingMiniPlayer";
 import { useAudio } from "@/context/AudioContext";
 import { useNotes } from "@/context/NotesContext";
+
+// Dynamic Imports (Code Splitting)
+const YouTubePlayer = dynamic(() => import("@/components/YouTubePlayer"));
+const ZenRingTimer = dynamic(() => import("@/components/ZenRingTimer"));
+const StickyNotes = dynamic(() => import("@/components/StickyNotes"));
+const WhisperAI = dynamic(() => import("@/components/WhisperAI"));
+const Gateway = dynamic(() => import("@/components/Gateway"));
+const ZenMusic = dynamic(() => import("@/components/ZenMusic"));
+const FloatingMiniPlayer = dynamic(() => import("@/components/FloatingMiniPlayer"));
 
 export default function Home() {
   const { setIsPanelOpen } = useAudio();
@@ -26,6 +28,9 @@ export default function Home() {
   const [focusDuration, setFocusDuration] = useState(50); // Default 50m
   const [showBreakModal, setShowBreakModal] = useState(false);
   const [isBreakMode, setIsBreakMode] = useState(false);
+  const [isSessionEnded, setIsSessionEnded] = useState(false);
+  const [showTestConfettiModal, setShowTestConfettiModal] = useState(false);
+  const [testConfettiSeconds, setTestConfettiSeconds] = useState("5");
 
   // Sync AudioContext panel state
   useEffect(() => {
@@ -77,7 +82,10 @@ export default function Home() {
 
   const handleEnterGateway = (url: string) => {
     const id = extractVideoId(url);
-    if (id) setVideoId(id);
+    if (id) {
+       setVideoId(id);
+       setShowTestConfettiModal(true);
+    }
   };
 
   const handleStateChange = useCallback((state: number) => {
@@ -89,21 +97,66 @@ export default function Home() {
     
     // Only trigger modal and confetti if it was a focus session, not a break
     if (!isBreakMode) {
-      setShowBreakModal(true);
       // Trigger Celebration
       confetti({
         particleCount: 150,
-        spread: window.innerWidth < 768 ? 60 : 100,
-        origin: { y: 0.8 },
-        colors: ["#8c25f4", "#34D399", "#d946ef", "#FBBF24"]
+        spread: window.innerWidth < 768 ? 80 : 120,
+        origin: { y: 0.7 },
+        colors: ["#8c25f4", "#34D399", "#d946ef", "#FBBF24"],
+        zIndex: 10000,
+        gravity: 0.8,
+        scalar: 1.2
       });
+      
+      // Delay modal slightly for visual impact
+      setTimeout(() => {
+        setShowBreakModal(true);
+      }, 500);
     } else {
-      // Break is over, immediately reset back to focus mode setup without modal
-      setIsHardStop(false);
+      // Break is over! Trigger "Focus Assistant" lock
+      setIsHardStop(true);
+      setIsSessionEnded(true);
       setIsBreakMode(false);
-      setFocusDuration(50); // reset to standard focus
+      setFocusDuration(50); // Ready for next 50m focus
     }
   }, [isBreakMode]);
+
+  const startConfettiTest = useCallback(() => {
+    setShowTestConfettiModal(false);
+    // Explicitly parse and use the value to avoid stale closures
+    const seconds = Number(testConfettiSeconds);
+    const ms = seconds * 1000;
+    
+    if (ms >= 0) {
+      setTimeout(() => {
+        // Multi-burst for premium feel like the reference image
+        const count = 200;
+        const defaults = {
+          origin: { y: 0.7 },
+          zIndex: 10000,
+          colors: ["#8c25f4", "#34D399", "#d946ef", "#FBBF24"],
+          scalar: 1.2
+        };
+
+        function fire(particleRatio: number, opts: any) {
+          confetti({
+            ...defaults,
+            ...opts,
+            particleCount: Math.floor(count * particleRatio),
+          });
+        }
+
+        fire(0.25, { spread: 26, startVelocity: 55 });
+        fire(0.2, { spread: 60 });
+        fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+        fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+        fire(0.1, { spread: 120, startVelocity: 45 });
+
+        // Show the high-end modal
+        setShowBreakModal(true);
+      }, ms);
+    }
+  }, [testConfettiSeconds]);
 
   return (
     <AnimatePresence mode="wait">
@@ -133,50 +186,118 @@ export default function Home() {
 
 
 
-          {/* Break Modal */}
+          {/* Confetti Test Modal */}
+          <AnimatePresence>
+            {showTestConfettiModal && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-[120px] flex items-center justify-center p-4"
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  className="bg-[#1E2024]/90 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col items-center text-center max-w-[380px] w-full shadow-[0_40px_100px_rgba(0,0,0,0.8)]"
+                >
+                  <div className="w-14 h-14 rounded-full bg-[#2A2B33] flex items-center justify-center mb-5 text-2xl">
+                    ✨
+                  </div>
+                  <h3 className="text-[24px] font-bold text-white mb-2 tracking-tight">Test the Vibe?</h3>
+                  <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+                    Want to test the celebration effect? Enter seconds below to trigger a test confetti pop over the video!
+                  </p>
+                <div className="w-full relative mb-6">
+                  <input 
+                     type="number" 
+                     value={testConfettiSeconds}
+                     onChange={(e) => setTestConfettiSeconds(e.target.value)}
+                     className="w-full bg-[#09090B] border border-white/10 rounded-xl px-4 py-3 text-center text-white text-xl font-bold focus:outline-none focus:border-[#8c25f4] transition-colors"
+                     placeholder="Seconds"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 font-medium text-sm">SEC</span>
+                </div>
+                <div className="flex flex-col gap-3 w-full">
+                   <button 
+                     onClick={startConfettiTest}
+                     className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#8c25f4] to-[#d946ef] text-white font-bold hover:opacity-90 transition-opacity shadow-[0_0_20px_rgba(140,37,244,0.3)] text-[14px] uppercase tracking-wider"
+                   >
+                     Test Confetti
+                   </button>
+                   <button 
+                     onClick={() => setShowTestConfettiModal(false)}
+                     className="w-full py-3 text-[#5A6076] hover:text-zinc-300 font-medium transition-colors text-sm"
+                   >
+                     Skip Test
+                   </button>
+                </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Celebration / Break Modal */}
           <AnimatePresence>
             {showBreakModal && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[400] bg-[#1E2024]/80 backdrop-blur-2xl border border-white/5 rounded-3xl p-10 flex flex-col items-center text-center max-w-[420px] w-[90%] shadow-[0_40px_100px_rgba(0,0,0,0.8)]"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-[100px] flex items-center justify-center p-6"
               >
-                <div className="w-16 h-16 rounded-full bg-[#2A2B33] flex items-center justify-center mb-6 text-3xl">
-                  🎉
-                </div>
-                <h3 className="text-[28px] font-bold text-white mb-3 tracking-tight">Incredible focus!</h3>
-                <p className="text-zinc-400 text-[15px] mb-8 leading-relaxed px-4">
-                  You unlocked a <span className="text-indigo-400 font-medium">5-minute break</span>.<br/>Stretch, breathe, and grab some water.
-                </p>
-                <div className="flex flex-col gap-4 w-full px-2">
-                   <button 
-                     onClick={() => {
-                        setShowBreakModal(false);
-                        setIsHardStop(false);
-                        setIsBreakMode(true);
-                        setFocusDuration(5); // 5 min break
-                     }}
-                     className="w-full py-4 rounded-xl bg-white text-black font-semibold hover:bg-zinc-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.15)] text-[15px]"
-                   >
-                     Start Break Timer
-                   </button>
-                   <button 
-                     onClick={() => {
-                        setShowBreakModal(false);
-                        setIsHardStop(false);
-                     }}
-                     className="w-full py-3 text-[#5A6076] hover:text-zinc-300 font-medium transition-colors text-sm"
-                   >
-                     Skip break and keep working
-                   </button>
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                  className="bg-[#1E2024]/40 backdrop-blur-3xl border border-white/10 rounded-[40px] p-12 flex flex-col items-center text-center max-w-[500px] w-full shadow-[0_40px_120px_rgba(0,0,0,0.5)] relative overflow-hidden"
+                >
+                  {/* Subtle Inner Glow */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                  
+                  <div className="w-24 h-24 rounded-3xl bg-white/5 flex items-center justify-center mb-8 text-5xl shadow-inner">
+                    🎉
+                  </div>
+                  
+                  <h3 className="text-[42px] md:text-[52px] font-bold text-white mb-4 tracking-tight leading-tight">
+                    Incredible focus!
+                  </h3>
+                  
+                  <p className="text-zinc-400 text-lg md:text-xl mb-12 leading-relaxed font-medium">
+                    You unlocked a <span className="text-white font-bold opacity-90">5-minute break</span>.
+                    <br/><span className="text-zinc-500 text-base mt-2 block font-normal px-8">Stretch, breathe, and grab some water.</span>
+                  </p>
+                  
+                  <div className="flex flex-col gap-6 w-full">
+                     <button 
+                       onClick={() => {
+                          setShowBreakModal(false);
+                          setIsHardStop(false);
+                          setIsBreakMode(true);
+                          setFocusDuration(5);
+                       }}
+                       className="w-full py-5 rounded-2xl bg-white text-black font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)] text-lg"
+                     >
+                       Start Break Timer
+                     </button>
+                     <button 
+                       onClick={() => {
+                          setShowBreakModal(false);
+                          setIsHardStop(false);
+                       }}
+                       className="w-full py-2 text-zinc-500 hover:text-zinc-300 font-medium transition-colors text-sm underline-offset-8 hover:underline"
+                     >
+                       Skip break and keep working
+                     </button>
+                  </div>
+                </motion.div>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* [Section A] Main Cinematic Video Section (70%) */}
-          <section className="relative z-[1] overflow-hidden w-full h-[70dvh] md:h-full md:w-[70%]">
+          <section className="relative z-[1] overflow-hidden w-full h-auto aspect-video md:aspect-auto md:h-full md:w-[70%] shrink-0">
             <YouTubePlayer 
               videoId={videoId} 
               onStateChange={handleStateChange}
@@ -192,33 +313,45 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Hard Stop Overlay (Scoped to Video) */}
+              {/* Hard Stop / Session End Overlay (Scoped to Video) */}
               <AnimatePresence>
-                {isHardStop && (
+                {(isHardStop || isSessionEnded) && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="absolute inset-0 z-[100] backdrop-blur-[120px] bg-black/80 flex items-center justify-center p-8 text-center pointer-events-auto"
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 z-[1000] bg-black/60 backdrop-blur-[120px] flex items-center justify-center p-6 text-center cursor-default pointer-events-auto"
                   >
-                    <div className="max-w-xl">
-                      <motion.div
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="mb-8 p-6 glass rounded-full w-fit mx-auto border border-white/10"
-                      >
-                        <Sparkles size={48} className="text-[#8c25f4]" />
-                      </motion.div>
-                      <h2 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tighter">Protocol Complete.</h2>
-                      <p className="text-zinc-400 text-base md:text-lg leading-relaxed mb-10 font-light italic">
-                        Neural pathways fully calibrated. Focus session successfully materialized.
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                      animate={{ scale: 1, opacity: 1, y: 0 }}
+                      className="max-w-md w-full bg-[#1E2024]/40 border border-white/10 rounded-[40px] p-8 md:p-12 shadow-2xl backdrop-blur-3xl"
+                    >
+                      <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mb-6 mx-auto text-4xl shadow-inner border border-white/5">
+                        {isSessionEnded ? "🔄" : "⚠️"}
+                      </div>
+                      
+                      <h3 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
+                        {isSessionEnded ? "Break Complete!" : "Presence Lost"}
+                      </h3>
+                      
+                      <p className="text-zinc-400 text-lg mb-8 leading-relaxed">
+                        {isSessionEnded 
+                          ? "Your break has ended. Ready to dive back into deep work?" 
+                          : "The timer paused because you were distracted. Get back to focus!"
+                        }
                       </p>
-                      <button 
-                        onClick={() => setIsHardStop(false)}
-                        className="px-12 py-5 rounded-full bg-white text-black text-[10px] uppercase tracking-[0.5em] font-black hover:scale-105 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)]"
+                      
+                      <button
+                        onClick={() => {
+                          setIsHardStop(false);
+                          setIsSessionEnded(false);
+                        }}
+                        className="w-full py-4 rounded-xl bg-white text-black font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]"
                       >
-                        Resume Flow
+                        {isSessionEnded ? "Start New Focus Session" : "I'm Back"}
                       </button>
-                    </div>
+                    </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -229,7 +362,7 @@ export default function Home() {
           <AnimatePresence>
             <motion.aside 
               initial={false}
-              className="relative flex flex-col-reverse md:flex-row h-[30dvh] md:h-full w-full md:w-[30%] z-[200] md:z-20 bg-[#09090B]/60 backdrop-blur-2xl border-t md:border-t-0 md:border-l border-white/10 shadow-[inset_1px_0_20px_rgba(255,255,255,0.02)] overflow-hidden"
+              className="relative flex flex-col-reverse md:flex-row flex-1 md:flex-none md:h-full w-full md:w-[30%] z-[200] md:z-20 bg-[#09090B]/60 backdrop-blur-2xl border-t md:border-t-0 md:border-l border-white/10 shadow-[inset_1px_0_20px_rgba(255,255,255,0.02)] overflow-hidden"
             >
               {/* Main Content Area (Left side of sidebar) */}
               <div className="flex-1 flex flex-col h-full overflow-hidden overscroll-none">

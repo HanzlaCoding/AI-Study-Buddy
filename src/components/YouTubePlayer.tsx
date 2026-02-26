@@ -102,7 +102,7 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
   };
 
   return (
-    <div ref={wrapperRef} className="relative w-full h-full overflow-hidden bg-black shadow-2xl group flex items-center justify-center">
+    <div ref={wrapperRef} className="relative w-full h-full bg-black shadow-2xl group flex items-center justify-center">
       <div className="relative w-full aspect-video pointer-events-auto">
         <div id="player" className="absolute inset-0 w-full h-full" />
       </div>
@@ -121,23 +121,27 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-[120px]"
+            className="absolute inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-[120px] overflow-hidden"
           >
-            <div className="text-center p-12 max-w-lg">
-              <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="mb-10 inline-block p-5 rounded-full bg-white/5 border border-white/10"
-              >
-                <div className="w-4 h-4 rounded-full bg-red-500 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.5)]" />
-              </motion.div>
-              <h2 className="text-5xl font-bold text-white mb-8 tracking-tighter uppercase">Presence Lost</h2>
-              <p className="text-zinc-400 mb-12 text-lg font-light leading-relaxed">
+            <div className="text-center p-4 md:p-12 max-w-lg w-full flex flex-col items-center justify-center h-full">
+              <div className="flex flex-row items-center gap-3 md:gap-4 mb-4 md:mb-8">
+                <motion.div 
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="p-3 md:p-5 rounded-full bg-white/5 border border-white/10 shrink-0"
+                >
+                  <div className="w-2.5 h-2.5 md:w-4 md:h-4 rounded-full bg-red-500 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.5)]" />
+                </motion.div>
+                <h2 className="text-2xl md:text-5xl font-bold text-white tracking-tighter uppercase whitespace-nowrap">Presence Lost</h2>
+              </div>
+              
+              <p className="text-zinc-400 mb-6 md:mb-12 text-xs md:text-lg font-light leading-relaxed px-2 md:px-6">
                 Neural link severed. Deep Work Studio requires absolute presence to continue protocol.
               </p>
+              
               <button
                 onClick={resumeFocus}
-                className="px-12 py-5 bg-white text-black text-[10px] font-bold rounded-full hover:bg-zinc-200 transition-all active:scale-95 uppercase tracking-[0.4em] shadow-2xl shadow-white/10"
+                className="px-6 md:px-12 py-3 md:py-5 bg-white text-black text-[9px] md:text-[10px] font-bold rounded-full hover:bg-zinc-200 transition-all active:scale-95 uppercase tracking-[0.3em] md:tracking-[0.4em] shadow-2xl shadow-white/10"
               >
                 Restore Link
               </button>
