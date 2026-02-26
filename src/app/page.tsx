@@ -182,7 +182,7 @@ export default function Home() {
               onStateChange={handleStateChange}
             >
               {/* Floating Gamified Timer (Visible in Fullscreen) */}
-              <div className="absolute top-4 right-4 md:top-8 md:right-auto md:left-1/2 md:-translate-x-1/2 z-[300] bg-[#0C0C0E]/90 backdrop-blur-xl border border-white/10 shadow-2xl rounded-full px-4 py-2 md:px-8 md:py-3 flex items-center justify-center pointer-events-auto text-sm md:text-base">
+              <div className="absolute top-4 right-4 md:top-8 md:right-auto md:left-1/2 md:-translate-x-1/2 z-[9999] bg-black/40 backdrop-blur-3xl border border-white/10 shadow-2xl rounded-full px-4 py-2 md:px-8 md:py-3 flex items-center justify-center pointer-events-auto text-sm md:text-base">
                 <div className="w-24 h-6 md:w-32 md:h-8">
                   <ZenRingTimer 
                      isPlaying={playerState === 1 && !isHardStop} 

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Maximize, Minimize } from "lucide-react";
 
 interface YouTubePlayerProps {
   onStateChange: (state: number) => void;
@@ -18,8 +19,18 @@ declare global {
 
 export default function YouTubePlayer({ onStateChange, videoId, children }: YouTubePlayerProps) {
   const playerRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [isFocusBroken, setIsFocusBroken] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
 
   useEffect(() => {
     // Load YouTube Iframe API
@@ -39,6 +50,7 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
           modestbranding: 1,
           rel: 0,
           showinfo: 0,
+          fs: 0,
         },
         events: {
           onStateChange: (event: any) => {
@@ -52,8 +64,8 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
     };
 
     const requestFullscreen = () => {
-      if (containerRef.current?.requestFullscreen) {
-        containerRef.current.requestFullscreen();
+      if (wrapperRef.current?.requestFullscreen && !document.fullscreenElement) {
+        wrapperRef.current.requestFullscreen().catch((err) => console.log(err));
       }
     };
 
@@ -77,11 +89,32 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
     setIsFocusBroken(false);
   };
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      if (wrapperRef.current?.requestFullscreen) {
+        wrapperRef.current.requestFullscreen().catch((err) => console.log(err));
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
   return (
-    <div ref={containerRef} className="relative w-full h-full overflow-hidden bg-black shadow-2xl">
-      <div id="player" className="w-full h-full scale-[1.01]" /> {/* Slight scale to hide potential edges */}
+    <div ref={wrapperRef} className="relative w-full h-full overflow-hidden bg-black shadow-2xl group flex items-center justify-center">
+      <div className="relative w-full aspect-video pointer-events-auto">
+        <div id="player" className="absolute inset-0 w-full h-full" />
+      </div>
       
       {children}
+      
+      <button
+        onClick={toggleFullscreen}
+        className="absolute bottom-4 right-4 z-[9000] bg-black/50 backdrop-blur-md p-2 rounded-lg border border-white/10 hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100 pointer-events-auto"
+      >
+        {isFullscreen ? <Minimize size={20} className="text-white" /> : <Maximize size={20} className="text-white" />}
+      </button>
       <AnimatePresence>
         {isFocusBroken && (
           <motion.div
