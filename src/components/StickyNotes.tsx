@@ -220,7 +220,7 @@ export default function StickyNotes({ onClose }: StickyNotesProps) {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="w-full max-w-sm bg-[#0C0C0E]/90 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl p-5 flex flex-col gap-4"
+              className="w-full max-w-sm bg-[#0C0C0E]/90 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl p-5 flex flex-col gap-4 transform-gpu"
             >
               <div className="flex items-center justify-between pb-2 border-b border-white/5">
                 <h3 className="text-sm font-medium text-zinc-200">New Subject</h3>
@@ -261,7 +261,7 @@ export default function StickyNotes({ onClose }: StickyNotesProps) {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="w-full max-w-sm bg-[#0C0C0E]/90 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl p-5 flex flex-col gap-4"
+              className="w-full max-w-sm bg-[#0C0C0E]/90 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl p-5 flex flex-col gap-4 transform-gpu"
             >
               <div className="flex items-center justify-between">
                 <div className="flex gap-2">

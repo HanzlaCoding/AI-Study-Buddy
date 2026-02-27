@@ -43,11 +43,11 @@ export default function ZenMusic() {
         
         {/* Subtle Visualizer */}
         {isPlaying && (
-          <div className="ml-auto flex items-end gap-1 h-3">
-            <motion.div animate={{ height: ["40%", "100%", "40%"] }} transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }} className="w-0.5 bg-zinc-500/50 rounded-full" />
-            <motion.div animate={{ height: ["70%", "30%", "70%"] }} transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut", delay: 0.2 }} className="w-0.5 bg-zinc-500/50 rounded-full" />
-            <motion.div animate={{ height: ["30%", "90%", "30%"] }} transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut", delay: 0.4 }} className="w-0.5 bg-zinc-500/50 rounded-full" />
-            <motion.div animate={{ height: ["100%", "50%", "100%"] }} transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut", delay: 0.1 }} className="w-0.5 bg-zinc-500/50 rounded-full" />
+          <div className="ml-auto flex items-end gap-1 h-3 transform-gpu">
+            <motion.div animate={{ height: ["40%", "100%", "40%"] }} transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }} className="w-0.5 bg-zinc-500/50 rounded-full transform-gpu" />
+            <motion.div animate={{ height: ["70%", "30%", "70%"] }} transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut", delay: 0.2 }} className="w-0.5 bg-zinc-500/50 rounded-full transform-gpu" />
+            <motion.div animate={{ height: ["30%", "90%", "30%"] }} transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut", delay: 0.4 }} className="w-0.5 bg-zinc-500/50 rounded-full transform-gpu" />
+            <motion.div animate={{ height: ["100%", "50%", "100%"] }} transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut", delay: 0.1 }} className="w-0.5 bg-zinc-500/50 rounded-full transform-gpu" />
           </div>
         )}
       </div>
@@ -88,7 +88,7 @@ export default function ZenMusic() {
         {/* Main Controls */}
         <button
           onClick={togglePlay}
-          className="p-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 active:scale-95 flex items-center justify-center shadow-[0_4px_24px_rgba(0,0,0,0.15)]"
+          className="p-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 active:scale-95 flex items-center justify-center shadow-[0_4px_24px_rgba(0,0,0,0.15)] transform-gpu"
         >
           {isPlaying ? <Pause size={24} className="text-zinc-200 fill-zinc-200" /> : <Play size={24} className="text-zinc-200 fill-zinc-200 ml-1" />}
         </button>

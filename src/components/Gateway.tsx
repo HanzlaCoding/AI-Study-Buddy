@@ -22,7 +22,7 @@ interface GatewayProps {
 }
 
 export default function Gateway({ onEnter, onDurationChange, duration, hideUI = false }: GatewayProps) {
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState("https://www.youtube.com/watch?v=w0K5SOSlOvU");
   const [focusDuration, setFocusDuration] = useState(duration);
   const [showError, setShowError] = useState(false);
 
@@ -61,7 +61,7 @@ export default function Gateway({ onEnter, onDurationChange, duration, hideUI = 
                   animate={{ scale: 1, opacity: 1, y: 0 }}
                   exit={{ scale: 0.9, opacity: 0, y: 10 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#0C0C0E]/80 border border-white/10 p-8 rounded-[32px] max-w-sm w-full text-center shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)]"
+                  className="bg-[#0C0C0E]/80 border border-white/10 p-8 rounded-[32px] max-w-sm w-full text-center shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] transform-gpu"
                 >
                   <div className="w-16 h-16 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mx-auto mb-6">
                     <Zap size={24} className="text-orange-500" />
@@ -124,7 +124,7 @@ export default function Gateway({ onEnter, onDurationChange, duration, hideUI = 
                 {/* Advanced Input Container */}
                 <form 
                   onSubmit={handleSubmit}
-                  className={`relative flex items-center bg-[#0C0C0E]/40 border ${url ? "border-[#2b7fff]/50 shadow-[0_0_50px_rgba(43,127,255,0.15)]" : "border-white/5"} rounded-3xl md:rounded-[40px] p-2 md:p-3 focus-within:border-[#2b7fff]/70 focus-within:shadow-[0_0_60px_rgba(43,127,255,0.2)] transition-all duration-700 backdrop-blur-3xl overflow-hidden group/form`}
+                  className={`relative flex items-center bg-[#0C0C0E]/40 border ${url ? "border-[#2b7fff]/50 shadow-[0_0_50px_rgba(43,127,255,0.15)]" : "border-white/5"} rounded-3xl md:rounded-[40px] p-2 md:p-3 focus-within:border-[#2b7fff]/70 focus-within:shadow-[0_0_60px_rgba(43,127,255,0.2)] transition-all duration-700 backdrop-blur-md md:backdrop-blur-3xl overflow-hidden group/form`}
                 >
                   {/* Decorative glow line */}
                   <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent" />

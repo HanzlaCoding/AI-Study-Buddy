@@ -181,8 +181,8 @@ export default function Home() {
           className="flex flex-col md:flex-row h-[100dvh] w-full bg-[#09090B] overflow-hidden selection:bg-[#8c25f4]/20 font-sans relative"
         >
           {/* Aurora Orbs */}
-          <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-900/20 rounded-full blur-3xl md:blur-[120px] -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-900/10 rounded-full blur-3xl md:blur-[120px] translate-x-1/3 translate-y-1/3 pointer-events-none z-0" />
+          <div className="absolute top-0 left-0 w-64 h-64 md:w-96 md:h-96 bg-indigo-900/20 rounded-full blur-[60px] md:blur-[120px] -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0 transform-gpu" />
+          <div className="absolute bottom-0 right-0 w-64 h-64 md:w-96 md:h-96 bg-purple-900/10 rounded-full blur-[60px] md:blur-[120px] translate-x-1/3 translate-y-1/3 pointer-events-none z-0 transform-gpu" />
 
 
 
@@ -193,13 +193,13 @@ export default function Home() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-xl md:backdrop-blur-[120px] flex items-center justify-center p-4"
+                className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-md md:backdrop-blur-[120px] flex items-center justify-center p-4"
               >
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  className="bg-[#1E2024]/90 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col items-center text-center max-w-[380px] w-full shadow-[0_40px_100px_rgba(0,0,0,0.8)]"
+                  className="bg-[#1E2024]/90 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col items-center text-center max-w-[380px] w-full shadow-[0_40px_100px_rgba(0,0,0,0.8)] transform-gpu"
                 >
                   <div className="w-14 h-14 rounded-full bg-[#2A2B33] flex items-center justify-center mb-5 text-2xl">
                     ✨
@@ -244,14 +244,14 @@ export default function Home() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-xl md:backdrop-blur-[100px] flex items-center justify-center p-6"
+                className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-md md:backdrop-blur-[100px] flex items-center justify-center p-6"
               >
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9, y: 20 }}
                   transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  className="bg-[#1E2024]/40 backdrop-blur-3xl border border-white/10 rounded-[40px] p-12 flex flex-col items-center text-center max-w-[500px] w-full shadow-[0_40px_120px_rgba(0,0,0,0.5)] relative overflow-hidden"
+                  className="bg-[#1E2024]/40 backdrop-blur-3xl border border-white/10 rounded-[40px] p-12 flex flex-col items-center text-center max-w-[500px] w-full shadow-[0_40px_120px_rgba(0,0,0,0.5)] relative overflow-hidden transform-gpu"
                 >
                   {/* Subtle Inner Glow */}
                   <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
@@ -320,7 +320,7 @@ export default function Home() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="absolute inset-0 z-[1000] bg-black/60 backdrop-blur-xl md:backdrop-blur-[120px] flex items-center justify-center p-6 text-center cursor-default pointer-events-auto"
+                    className="absolute inset-0 z-[1000] bg-black/60 backdrop-blur-md md:backdrop-blur-[120px] flex items-center justify-center p-6 text-center cursor-default pointer-events-auto"
                   >
                     <motion.div
                       initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -388,7 +388,7 @@ export default function Home() {
                         initial={{ opacity: 0, scale: 0.98, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 1.02, y: -10 }}
-                        transition={{ duration: 0.4, ease: "circOut" }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
                         className="h-full"
                       >
                         <StickyNotes />
@@ -400,7 +400,7 @@ export default function Home() {
                         initial={{ opacity: 0, scale: 0.98, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 1.02, y: -10 }}
-                        transition={{ duration: 0.4, ease: "circOut" }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
                         className="h-full overflow-y-auto scrollbar-none"
                       >
                         <ZenMusic />

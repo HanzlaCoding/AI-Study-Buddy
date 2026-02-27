@@ -35,7 +35,7 @@ export default function FloatingMiniPlayer({ onExpand }: FloatingMiniPlayerProps
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 50, scale: 0.9 }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          className="fixed bottom-8 left-8 z-[300] bg-white/[0.05] backdrop-blur-3xl border border-white/10 rounded-full shadow-2xl px-3 py-2.5 flex items-center gap-4 min-w-[320px] max-w-[400px]"
+          className="fixed bottom-8 left-8 z-[300] bg-white/[0.05] backdrop-blur-md md:backdrop-blur-3xl border border-white/10 rounded-full shadow-2xl px-3 py-2.5 flex items-center gap-4 min-w-[320px] max-w-[400px] transform-gpu"
         >
           {/* Album Art Placeholder / Thumbnail */}
            {currentTrack?.thumbnail ? (

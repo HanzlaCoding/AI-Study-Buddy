@@ -12,16 +12,19 @@ export default function WhisperAI({ onClose }: WhisperAIProps) {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isLoading, error]);
 
   const sendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
+    
+    setError(null);
     const userMsg = { role: "user", content: input };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
@@ -33,10 +36,19 @@ export default function WhisperAI({ onClose }: WhisperAIProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: [...messages, userMsg] }),
       });
+      
       const data = await res.json();
-      setMessages((prev) => [...prev, { role: "assistant", content: data.content }]);
-    } catch (err) {
-      console.error(err);
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Connection to neural link lost.");
+      }
+
+      if (data.content) {
+        setMessages((prev) => [...prev, { role: "assistant", content: data.content }]);
+      }
+    } catch (err: any) {
+      console.error("AI Error:", err);
+      setError(err.message || "The AI is currently unresponsive. Please check your connection.");
     } finally {
       setIsLoading(false);
     }
@@ -98,6 +110,17 @@ export default function WhisperAI({ onClose }: WhisperAIProps) {
               <div className="w-1.5 h-1.5 bg-zinc-700 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
             </div>
           </div>
+        )}
+
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs leading-relaxed"
+          >
+            <p className="font-bold mb-1 uppercase tracking-wider text-[10px]">Neural Link Interrupted</p>
+            {error}
+          </motion.div>
         )}
       </div>
 
