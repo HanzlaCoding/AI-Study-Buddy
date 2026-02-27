@@ -278,8 +278,8 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
       // If we exit fullscreen, try to unlock orientation
-      if (!document.fullscreenElement && window.screen?.orientation?.unlock) {
-        window.screen.orientation.unlock();
+      if (!document.fullscreenElement && (window.screen?.orientation as any)?.unlock) {
+        (window.screen.orientation as any).unlock();
       }
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
@@ -305,7 +305,7 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
             await (wrapper as any).webkitRequestFullscreen();
           }
           if (window.screen?.orientation && (window.screen.orientation as any).lock) {
-            await (window.screen.orientation.lock as any)('landscape').catch(() => {});
+            await (window.screen.orientation as any).lock('landscape').catch(() => {});
           }
         } catch {}
       }
