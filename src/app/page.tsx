@@ -21,6 +21,7 @@ export default function Home() {
   const { setIsPanelOpen } = useAudio();
   const { hasNewNote, setHasNewNote } = useNotes();
   const [videoId, setVideoId] = useState<string | null>(null);
+  const [biggestFear, setBiggestFear] = useState<string>("");
   const [playerState, setPlayerState] = useState(-1);
   const [isHardStop, setIsHardStop] = useState(false);
   const [activeTab, setActiveTab] = useState<"ai" | "notes" | "music">("ai");
@@ -80,10 +81,11 @@ export default function Home() {
     return (match && match[2].length === 11) ? match[2] : null;
   };
 
-  const handleEnterGateway = (url: string) => {
+  const handleEnterGateway = (url: string, fear: string) => {
     const id = extractVideoId(url);
     if (id) {
        setVideoId(id);
+       setBiggestFear(fear);
        setShowTestConfettiModal(true);
     }
   };
@@ -302,6 +304,15 @@ export default function Home() {
               videoId={videoId} 
               onStateChange={handleStateChange}
             >
+              {/* Biggest Fear Overlay (Top Center) */}
+              {biggestFear && (
+                <div className="absolute top-4 md:top-8 left-4 md:left-8 z-[8000] pointer-events-none opacity-40 hover:opacity-100 transition-opacity duration-1000">
+                  <div className="bg-red-950/40 backdrop-blur-md border border-red-500/20 text-red-500 px-4 md:px-6 py-2 rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(220,38,38,0.2)] max-w-[200px] md:max-w-xs truncate">
+                    Defeating: {biggestFear}
+                  </div>
+                </div>
+              )}
+
               {/* Floating Gamified Timer (Visible in Fullscreen) */}
               <div className="absolute top-4 right-4 md:top-8 md:right-auto md:left-1/2 md:-translate-x-1/2 z-[9999] bg-black/40 backdrop-blur-3xl border border-white/10 shadow-2xl rounded-full px-4 py-2 md:px-8 md:py-3 flex items-center justify-center pointer-events-auto text-sm md:text-base">
                 <div className="w-24 h-6 md:w-32 md:h-8">

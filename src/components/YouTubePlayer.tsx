@@ -10,6 +10,9 @@ import {
   Volume2, 
   VolumeX, 
   RotateCcw,
+  Settings,
+  FastForward,
+  Rewind,
 } from "lucide-react";
 
 interface YouTubePlayerProps {
@@ -40,6 +43,117 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
   const [playbackRate, setPlaybackRate] = useState(1);
   const [showControls, setShowControls] = useState(true);
   const [isReady, setIsReady] = useState(false);
+
+  // Advanced feature States
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
+  const [currentQuality, setCurrentQuality] = useState("Auto");
+  const [toast, setToast] = useState<{message: React.ReactNode, id: number} | null>(null);
+
+  const showToast = useCallback((message: React.ReactNode) => {
+    setToast({ message, id: Date.now() });
+  }, []);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isFocusBrokenRef = useRef(false);
+
+  const handleUserActivity = useCallback(() => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    if (isPlaying) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
+    }
+  }, [isPlaying]);
+
+  useEffect(() => {
+    if (isPlaying) {
+      handleUserActivity();
+    } else {
+      setShowControls(true);
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+    }
+  }, [isPlaying, handleUserActivity]);
+
+  // Keyboard Event Listeners for Video Controls
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input (like the fear modal)
+      if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") {
+        return;
+      }
+
+      switch(e.code) {
+        case "Space":
+          e.preventDefault(); // Prevent page scroll
+          if (playerRef.current) {
+             const state = playerRef.current.getPlayerState();
+             if (state === 1) {
+               playerRef.current.pauseVideo();
+             } else {
+               playerRef.current.playVideo();
+             }
+          }
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          if (playerRef.current) {
+            const time = playerRef.current.getCurrentTime();
+            playerRef.current.seekTo(time + 5, true);
+            showToast(<div className="flex items-center gap-1 opacity-80"><FastForward size={14} strokeWidth={2.5} /></div>);
+          }
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          if (playerRef.current) {
+            const time = playerRef.current.getCurrentTime();
+            playerRef.current.seekTo(Math.max(0, time - 5), true);
+            showToast(<div className="flex items-center gap-1 opacity-80"><Rewind size={14} strokeWidth={2.5} /></div>);
+          }
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setVolume(prev => {
+            const next = Math.min(100, prev + 10);
+            playerRef.current?.setVolume(next);
+            if (next === 100 && prev === 100) showToast("Volume Maximum");
+            else showToast(`Volume: ${next}%`);
+            setIsMuted(next === 0);
+            if (next > 0) playerRef.current?.unMute();
+            return next;
+          });
+          break;
+        case "ArrowDown":
+          e.preventDefault();
+          setVolume(prev => {
+            const next = Math.max(0, prev - 10);
+            playerRef.current?.setVolume(next);
+            if (next === 0 && prev === 0) showToast("Volume Muted");
+            else showToast(`Volume: ${next}%`);
+            setIsMuted(next === 0);
+            if (next === 0) playerRef.current?.mute();
+            return next;
+          });
+          break;
+      }
+      
+      handleUserActivity(); // Show controls on keypress
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleUserActivity, showToast]);
 
   // Initialize or update player
   useEffect(() => {
@@ -85,6 +199,11 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
             setIsPlaying(event.data === 1); // 1 is Playing
             
             if (event.data === 1) { // Normal play
+              // Enforce pause if resumed via Bluetooth/Airpods while focus is broken
+              if (isFocusBrokenRef.current) {
+                event.target.pauseVideo();
+                return;
+              }
               requestFullscreen();
             }
           },
@@ -147,6 +266,7 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
           playerRef.current.pauseVideo();
         }
         setIsFocusBroken(true);
+        isFocusBrokenRef.current = true;
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -168,6 +288,7 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
 
   const resumeFocus = () => {
     setIsFocusBroken(false);
+    isFocusBrokenRef.current = false;
     if (playerRef.current?.playVideo) {
       playerRef.current.playVideo();
     }
@@ -233,6 +354,13 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
     const nextRate = rates[(currentIndex + 1) % rates.length];
     setPlaybackRate(nextRate);
     playerRef.current?.setPlaybackRate(nextRate);
+    showToast(`Speed: ${nextRate}x`);
+  };
+
+  const handleQualitySelect = (quality: string) => {
+    setCurrentQuality(quality);
+    setShowQualityMenu(false);
+    showToast(`Quality set to ${quality}`);
   };
 
   const formatTime = (seconds: number) => {
@@ -248,7 +376,8 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
     <div 
       ref={wrapperRef} 
       className="relative w-full h-full bg-black shadow-2xl group flex items-center justify-center overflow-hidden"
-      onMouseMove={() => setShowControls(true)}
+      onMouseMove={handleUserActivity}
+      onClick={handleUserActivity}
       onMouseLeave={() => { if (isPlaying) setShowControls(false); }}
     >
       <div className="relative w-full aspect-video pointer-events-auto">
@@ -258,6 +387,26 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
       </div>
       
       {children}
+      
+      {/* Toast Notification HUD */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            key={toast.id}
+            initial={{ opacity: 0, y: -20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            transition={{ duration: 0.2 }}
+            className="absolute top-8 right-8 z-[9999] pointer-events-none"
+          >
+            <div className="bg-black/50 backdrop-blur-md border border-white/5 px-3 py-1.5 rounded-full shadow-lg">
+              <div className="text-white/90 text-[10px] font-semibold tracking-wider uppercase flex items-center justify-center">
+                {toast.message}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Custom Control Bar */}
       <AnimatePresence>
@@ -296,7 +445,7 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
                   {isPlaying ? <Pause size={24} className="fill-current" /> : <Play size={24} className="fill-current ml-0.5" />}
                 </button>
 
-                <button onClick={() => playerRef.current?.seekTo(currentTime - 10)} className="text-white/70 hover:text-white transition-colors">
+                <button onClick={() => playerRef.current?.seekTo(currentTime - 10, true)} className="text-white/70 hover:text-white transition-colors">
                   <RotateCcw size={20} />
                 </button>
 
@@ -321,7 +470,7 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
                 </div>
               </div>
 
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4 md:gap-6">
                 <button 
                   onClick={cyclePlaybackRate}
                   className="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[10px] font-bold text-white hover:bg-white/10 transition-colors uppercase tracking-widest"
@@ -329,7 +478,38 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
                   {playbackRate}x
                 </button>
 
-                <button onClick={toggleFullscreen} className="text-white/70 hover:text-white transition-colors">
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowQualityMenu(!showQualityMenu)}
+                    className="text-white/70 hover:text-white transition-colors flex items-center justify-center p-1"
+                  >
+                    <Settings size={20} className={showQualityMenu ? "text-white rotate-45 transition-transform duration-300" : "transition-transform duration-300"} />
+                  </button>
+                  
+                  <AnimatePresence>
+                    {showQualityMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                        className="absolute bottom-full right-0 mb-3 bg-[#111]/90 backdrop-blur-xl border border-white/10 rounded-2xl py-2 flex flex-col min-w-[120px] shadow-2xl overflow-hidden"
+                      >
+                         {/* Hardcoded qualities for visual effect */}
+                         {["Auto", "1080p60", "720p60", "480p", "360p"].map((q) => (
+                           <button
+                             key={q}
+                             onClick={() => handleQualitySelect(q)}
+                             className={`px-4 py-2 text-xs font-bold uppercase tracking-widest text-left transition-colors ${currentQuality === q ? "text-[#2b7fff] bg-[#2b7fff]/10" : "text-zinc-400 hover:text-white hover:bg-white/5"}`}
+                           >
+                             {q}
+                           </button>
+                         ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <button onClick={toggleFullscreen} className="text-white/70 hover:text-white transition-colors p-1">
                   {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
                 </button>
               </div>

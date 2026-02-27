@@ -16,12 +16,10 @@ export async function POST(req: Request) {
     
     // Using modern systemInstruction for version 0.24.1+
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-3-flash",
       systemInstruction: "You are an elite, highly logical mentor for an 18-year-old ICS student preparing for Lahore Board exams. Expertise: C Programming and Physics. Style: Keep answers extremely brief and elegant. Guide logic; do not give direct answers to puzzles. Persona: Professional, encouraging, and focused."
     });
 
-    // Format chat history for Gemini
-    // Gemini expects: role 'user' or 'model', and 'parts' with 'text'
     const chatHistory = messages.slice(0, -1).map((m: any) => ({
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }]

@@ -15,7 +15,7 @@ import {
 import LiquidGradient from "./LiquidGradient";
 
 interface GatewayProps {
-  onEnter: (url: string) => void;
+  onEnter: (url: string, fear: string) => void;
   onDurationChange: (mins: number) => void;
   duration: number;
   hideUI?: boolean;
@@ -25,19 +25,32 @@ export default function Gateway({ onEnter, onDurationChange, duration, hideUI = 
   const [url, setUrl] = useState("https://www.youtube.com/watch?v=w0K5SOSlOvU");
   const [focusDuration, setFocusDuration] = useState(duration);
   const [showError, setShowError] = useState(false);
+  
+  const [showFearModal, setShowFearModal] = useState(false);
+  const [fear, setFear] = useState("");
 
   const handleEnter = () => {
     if (url.trim()) {
-      onDurationChange(focusDuration);
-      onEnter(url);
+      setShowFearModal(true);
     } else {
       setShowError(true);
     }
   };
 
+  const handleConfirmStart = () => {
+    if (fear.trim()) {
+      onDurationChange(focusDuration);
+      onEnter(url, fear);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    handleEnter();
+    if (showFearModal) {
+      handleConfirmStart();
+    } else {
+      handleEnter();
+    }
   };
 
   return (
@@ -46,6 +59,51 @@ export default function Gateway({ onEnter, onDurationChange, duration, hideUI = 
       
       {!hideUI && (
         <>
+          {/* Fear Modal Overlay */}
+          <AnimatePresence>
+            {showFearModal && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowFearModal(false)}
+                className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-md flex items-center justify-center p-6"
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.9, opacity: 0, y: 10 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-[#0C0C0E]/90 border border-white/10 p-8 md:p-12 rounded-[32px] max-w-lg w-full text-center shadow-[0_40px_80px_-20px_rgba(220,38,38,0.3)] transform-gpu relative overflow-hidden"
+                >
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-900/0 via-red-500/50 to-red-900/0" />
+                  <h3 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">What is your biggest fear?</h3>
+                  <p className="text-zinc-400 text-sm md:text-base mb-8 leading-relaxed max-w-sm mx-auto">
+                    Acknowledge the cost of failure. Let it drive your focus for the next {focusDuration} minutes.
+                  </p>
+                  
+                  <form onSubmit={(e) => { e.preventDefault(); handleConfirmStart(); }} className="space-y-6">
+                    <input 
+                      type="text" 
+                      placeholder="e.g., Failing the exam, staying average..."
+                      className="w-full bg-black/50 border border-red-900/30 rounded-2xl py-5 px-6 text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-500/50 transition-colors text-center text-lg shadow-inner"
+                      value={fear}
+                      onChange={(e) => setFear(e.target.value)}
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      disabled={!fear.trim()}
+                      className={`w-full py-5 text-[11px] font-black uppercase tracking-[0.4em] rounded-2xl transition-all duration-300 ${fear.trim() ? "bg-red-600 text-white hover:bg-red-500 hover:scale-[1.02] shadow-[0_0_30px_rgba(220,38,38,0.4)]" : "bg-zinc-900 text-zinc-600"}`}
+                    >
+                      Embrace The Fear & Start
+                    </button>
+                  </form>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Error Modal Overlay */}
           <AnimatePresence>
             {showError && (
