@@ -4,15 +4,9 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (!apiKey) {
-      console.error("Neural link key missing. Protocol offline.");
-      return NextResponse.json({ error: "Gemini API key is not configured locally." }, { status: 500 });
-    }
 
     // Initialize inside handler for robustness
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const genAI = new GoogleGenerativeAI(`AIzaSyAbup0NdwbjiuBqv7Yg2U2JNYdU3FhWq7g`);
     
     // Using modern systemInstruction for version 0.24.1+
     const model = genAI.getGenerativeModel({ 
