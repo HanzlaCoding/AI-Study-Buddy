@@ -1,12 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
+
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
 
     // Initialize inside handler for robustness
-    const genAI = new GoogleGenerativeAI(`AIzaSyAbup0NdwbjiuBqv7Yg2U2JNYdU3FhWq7g`);
+    const genAI = new GoogleGenerativeAI(`[GCP_API_KEY]`);
     
     // Using modern systemInstruction for version 0.24.1+
     const model = genAI.getGenerativeModel({ 
