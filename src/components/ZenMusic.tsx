@@ -38,8 +38,8 @@ export default function ZenMusic() {
     <div className="flex flex-col h-full bg-transparent p-6 md:p-8 font-sans transition-all duration-300">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8 cursor-default">
-        <Headphones size={18} className="text-zinc-400 drop-shadow-[0_0_8px_rgba(255,255,255,0.1)]" />
-        <h3 className="text-xs tracking-widest text-zinc-400 uppercase font-medium">Ambient Audio</h3>
+        <Headphones size={18} className="text-zinc-400" />
+        <h3 className="text-xs tracking-widest text-zinc-500 uppercase font-bold">Ambient Audio</h3>
         
         {/* Subtle Visualizer */}
         {isPlaying && (
@@ -57,9 +57,9 @@ export default function ZenMusic() {
         <div className="w-full relative group">
           <form onSubmit={handleSearch} className="relative">
             {isLoading ? (
-              <Loader2 size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400 z-10 animate-spin" />
+              <Loader2 size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6366F1] z-10 animate-spin" />
             ) : (
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 z-10" />
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 z-10" />
             )}
             <input 
               type="text"
@@ -67,19 +67,19 @@ export default function ZenMusic() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               disabled={isLoading}
-              className="w-full bg-white/5 border border-white/10 text-center text-sm md:text-base text-zinc-200 rounded-full py-3 px-12 outline-none focus:bg-white/10 transition-all font-light placeholder:text-zinc-600 disabled:opacity-50"
+              className="w-full bg-white border border-zinc-200 text-center text-sm md:text-base text-zinc-900 rounded-full py-3 px-12 outline-none focus:border-[#6366F1]/50 focus:ring-4 focus:ring-[#6366F1]/10 transition-all font-medium placeholder:text-zinc-400 disabled:opacity-50 shadow-sm"
             />
           </form>
 
           {/* Fallback Playlist Dropdown (Only visible if not searching) */}
           <div className="mt-6 text-center">
             <select 
-              className="w-full bg-transparent text-center text-sm md:text-base text-zinc-400 font-light appearance-none outline-none cursor-pointer transition-colors hover:text-white"
+              className="w-full bg-transparent text-center text-sm md:text-base text-zinc-500 font-medium appearance-none outline-none cursor-pointer transition-colors hover:text-zinc-900"
               value={activeStreamId}
               onChange={(e) => setActiveStreamId(e.target.value)}
             >
               {playlist.map(s => (
-                <option key={s.id} value={s.id} className="bg-[#1E2024] text-zinc-300">{s.name}</option>
+                <option key={s.id} value={s.id} className="bg-white text-zinc-900">{s.name}</option>
               ))}
             </select>
           </div>
@@ -88,17 +88,17 @@ export default function ZenMusic() {
         {/* Main Controls */}
         <button
           onClick={togglePlay}
-          className="p-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 active:scale-95 flex items-center justify-center shadow-[0_4px_24px_rgba(0,0,0,0.15)] transform-gpu"
+          className="p-4 rounded-full bg-white border border-zinc-200 hover:bg-zinc-50 transition-all duration-300 active:scale-95 flex items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,0.05)] transform-gpu"
         >
-          {isPlaying ? <Pause size={24} className="text-zinc-200 fill-zinc-200" /> : <Play size={24} className="text-zinc-200 fill-zinc-200 ml-1" />}
+          {isPlaying ? <Pause size={24} className="text-zinc-900 fill-zinc-900" /> : <Play size={24} className="text-zinc-900 fill-zinc-900 ml-1" />}
         </button>
 
         {/* Volume Slider */}
-        <div className="w-full max-w-[200px] flex items-center gap-4 opacity-60 hover:opacity-100 transition-opacity duration-300">
-          <Volume2 size={14} className="text-zinc-500 shrink-0" />
-          <div className="relative w-full h-1 bg-white/10 rounded-full flex items-center">
+        <div className="w-full max-w-[200px] flex items-center gap-4 opacity-100 hover:opacity-100 transition-opacity duration-300 group">
+          <Volume2 size={14} className="text-zinc-400 group-hover:text-zinc-600 shrink-0 transition-colors" />
+          <div className="relative w-full h-1.5 bg-zinc-200 rounded-full flex items-center">
             <div 
-              className="absolute left-0 top-0 h-full bg-indigo-400/50 rounded-full pointer-events-none transition-all duration-150"
+              className="absolute left-0 top-0 h-full bg-[#6366F1] rounded-full pointer-events-none transition-all duration-150"
               style={{ width: `${volume}%` }}
             />
             <input 

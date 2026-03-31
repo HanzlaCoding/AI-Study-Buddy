@@ -13,11 +13,15 @@ import {
   Settings,
   FastForward,
   Rewind,
+  ListVideo,
+  SkipForward,
+  SkipBack
 } from "lucide-react";
 
 interface YouTubePlayerProps {
   onStateChange: (state: number) => void;
   videoId: string;
+  playlistId?: string | null;
   children?: React.ReactNode;
 }
 
@@ -28,7 +32,7 @@ declare global {
   }
 }
 
-export default function YouTubePlayer({ onStateChange, videoId, children }: YouTubePlayerProps) {
+export default function YouTubePlayer({ onStateChange, videoId, playlistId, children }: YouTubePlayerProps) {
   const playerRef = useRef<any>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [isFocusBroken, setIsFocusBroken] = useState(false);
@@ -48,6 +52,12 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [currentQuality, setCurrentQuality] = useState("Auto");
   const [toast, setToast] = useState<{message: React.ReactNode, id: number} | null>(null);
+
+  // Playlist states
+  const [playlist, setPlaylist] = useState<string[]>([]);
+  const [currentPlaylistIndex, setCurrentPlaylistIndex] = useState(0);
+  const [showPlaylistMenu, setShowPlaylistMenu] = useState(false);
+  const [playlistMetadata, setPlaylistMetadata] = useState<Record<string, { title: string, thumbnail: string }>>({});
 
   const showToast = useCallback((message: React.ReactNode) => {
     setToast({ message, id: Date.now() });
@@ -173,31 +183,51 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
         playerRef.current.destroy();
       }
 
+      const playerVars: any = {
+        autoplay: 1,
+        controls: 0,
+        modestbranding: 1,
+        rel: 0,
+        showinfo: 0,
+        fs: 0,
+        iv_load_policy: 3,
+        disablekb: 1,
+        playsinline: 1
+      };
+
+      if (playlistId) {
+        playerVars.listType = 'playlist';
+        playerVars.list = playlistId;
+      }
+
       playerRef.current = new window.YT.Player("player-container", {
         height: "100%",
         width: "100%",
-        videoId: videoId,
-        playerVars: {
-          autoplay: 1,
-          controls: 0,
-          modestbranding: 1,
-          rel: 0,
-          showinfo: 0,
-          fs: 0,
-          iv_load_policy: 3,
-          disablekb: 1,
-          playsinline: 1
-        },
+        videoId: videoId || undefined,
+        playerVars,
         events: {
           onReady: (event: any) => {
             setIsReady(true);
             setDuration(event.target.getDuration());
             event.target.playVideo();
+            
+            if (playlistId && event.target.getPlaylist) {
+              setTimeout(() => {
+                const pls = event.target.getPlaylist();
+                if (pls) setPlaylist(pls);
+              }, 1000);
+            }
           },
           onStateChange: (event: any) => {
             onStateChange(event.data);
             setIsPlaying(event.data === 1); // 1 is Playing
             
+            if (playlistId && event.target.getPlaylist) {
+              const pls = event.target.getPlaylist();
+              if (pls) setPlaylist(prev => pls.length !== prev.length ? pls : prev);
+              setCurrentPlaylistIndex(event.target.getPlaylistIndex() || 0);
+            }
+
             if (event.data === 1) { // Normal play
               // Enforce pause if resumed via Bluetooth/Airpods while focus is broken
               if (isFocusBrokenRef.current) {
@@ -272,6 +302,54 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
+
+  // Playlist Metadata Fetching
+  useEffect(() => {
+    let isMounted = true;
+    const fetchMetadata = async () => {
+      // Only fetch 10 items ahead and 5 behind to avoid YouTube rate limits
+      const start = Math.max(0, currentPlaylistIndex - 5);
+      const end = Math.min(playlist.length, currentPlaylistIndex + 10);
+      const idsToFetch = playlist.slice(start, end);
+
+      for (const id of idsToFetch) {
+        if (!isMounted) break;
+        
+        // Skip if already fetched or fetching
+        if (playlistMetadata[id]) continue;
+        
+        setPlaylistMetadata(prev => ({ ...prev, [id]: { title: "Fetching...", thumbnail: "" } }));
+        
+        try {
+           const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`);
+           if (res.ok) {
+             const data = await res.json();
+             if (isMounted && data.title) {
+                setPlaylistMetadata(p => ({ ...p, [id]: { title: data.title, thumbnail: data.thumbnail_url || "" } }));
+             } else if (isMounted) {
+                setPlaylistMetadata(p => ({ ...p, [id]: { title: "Unavailable", thumbnail: "" } }));
+             }
+           } else {
+             if (isMounted) {
+                setPlaylistMetadata(p => ({ ...p, [id]: { title: "Error", thumbnail: "" } }));
+             }
+           }
+        } catch (e) {
+           if (isMounted) {
+              setPlaylistMetadata(p => ({ ...p, [id]: { title: "Error Fetching", thumbnail: "" } }));
+           }
+        }
+        
+        // Small delay to prevent API hammering
+        await new Promise(r => setTimeout(r, 150));
+      }
+    };
+
+    if (playlist.length > 0 && showPlaylistMenu) {
+       fetchMetadata();
+    }
+    return () => { isMounted = false; };
+  }, [playlist, showPlaylistMenu, currentPlaylistIndex]);
 
   // Handle Fullscreen state
   useEffect(() => {
@@ -385,6 +463,56 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
         {/* Interaction Layer */}
         <div className="absolute inset-0 z-10 cursor-pointer" onClick={handlePlayPause} />
       </div>
+
+      <AnimatePresence>
+        {showPlaylistMenu && playlist.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 50 }}
+            className="absolute top-0 right-0 bottom-24 w-80 bg-black/80 backdrop-blur-2xl border-l border-white/10 z-[9000] flex flex-col pointer-events-auto shadow-2xl"
+          >
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <h3 className="text-white font-bold tracking-tight text-sm">Playlist <span className="text-[#2b7fff] font-normal ml-2">{currentPlaylistIndex + 1}/{playlist.length}</span></h3>
+              <button onClick={() => setShowPlaylistMenu(false)} className="text-zinc-400 hover:text-white text-xl leading-none">&times;</button>
+            </div>
+            <div className="flex-1 overflow-y-auto scrollbar-none p-2 space-y-2 pb-6">
+              {playlist.map((id, index) => {
+                const meta = playlistMetadata[id];
+                const isPlaying = index === currentPlaylistIndex;
+                return (
+                  <button
+                    key={`${id}-${index}`}
+                    onClick={() => { playerRef.current?.playVideoAt(index); }}
+                    className={`w-full text-left p-2 rounded-xl flex gap-3 items-center group transition-colors ${isPlaying ? 'bg-[#2b7fff]/10 border border-[#2b7fff]/30' : 'hover:bg-white/5 border border-transparent'}`}
+                  >
+                    <div className="relative w-24 h-[54px] bg-zinc-900 rounded-lg overflow-hidden shrink-0 shadow-inner">
+                      {meta?.thumbnail ? (
+                        <img src={meta.thumbnail} alt={meta.title} className={`w-full h-full object-cover transition-transform duration-500 ${isPlaying ? 'scale-110 blur-sm brightness-50' : 'group-hover:scale-110'}`} />
+                      ) : (
+                         <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-600 bg-zinc-900 border border-white/5">...</div>
+                      )}
+                      
+                      {isPlaying && (
+                        <div className="absolute inset-0 flex items-center justify-center z-10">
+                          <div className="w-6 h-6 rounded-full bg-[#2b7fff]/80 flex items-center justify-center shadow-[0_0_15px_rgba(43,127,255,0.8)]">
+                            <Play size={10} className="text-white fill-white ml-0.5" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 pr-1">
+                      <p className={`text-xs font-semibold truncate leading-snug ${isPlaying ? 'text-[#2b7fff]' : 'text-zinc-300 group-hover:text-white'}`}>
+                        {meta?.title || "Fetching Title..."}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {children}
       
@@ -441,9 +569,22 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
 
             <div className="flex items-center justify-between gap-6">
               <div className="flex items-center gap-6">
+                
+                {(playlistId || playlist.length > 0) && (
+                  <button onClick={() => playerRef.current?.previousVideo()} className="text-white/70 hover:text-white transition-colors">
+                    <SkipBack size={20} className="fill-current" />
+                  </button>
+                )}
+
                 <button onClick={handlePlayPause} className="text-white hover:scale-110 transition-transform">
                   {isPlaying ? <Pause size={24} className="fill-current" /> : <Play size={24} className="fill-current ml-0.5" />}
                 </button>
+
+                {(playlistId || playlist.length > 0) && (
+                  <button onClick={() => playerRef.current?.nextVideo()} className="text-white/70 hover:text-white transition-colors">
+                    <SkipForward size={20} className="fill-current" />
+                  </button>
+                )}
 
                 <button onClick={() => playerRef.current?.seekTo(currentTime - 10, true)} className="text-white/70 hover:text-white transition-colors">
                   <RotateCcw size={20} />
@@ -478,10 +619,19 @@ export default function YouTubePlayer({ onStateChange, videoId, children }: YouT
                   {playbackRate}x
                 </button>
 
-                <div className="relative">
+                <div className="relative flex items-center gap-1 md:gap-3">
+                  {(playlistId || playlist.length > 0) && (
+                    <button 
+                      onClick={() => setShowPlaylistMenu(!showPlaylistMenu)}
+                      className={`transition-colors p-2 rounded-full ${showPlaylistMenu ? "text-[#2b7fff] bg-[#2b7fff]/10" : "text-white/70 hover:text-white hover:bg-white/5"}`}
+                    >
+                      <ListVideo size={20} />
+                    </button>
+                  )}
+
                   <button 
                     onClick={() => setShowQualityMenu(!showQualityMenu)}
-                    className="text-white/70 hover:text-white transition-colors flex items-center justify-center p-1"
+                    className="text-white/70 hover:text-white transition-colors flex items-center justify-center p-2 rounded-full hover:bg-white/5"
                   >
                     <Settings size={20} className={showQualityMenu ? "text-white rotate-45 transition-transform duration-300" : "transition-transform duration-300"} />
                   </button>

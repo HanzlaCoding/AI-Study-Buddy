@@ -1,26 +1,31 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, lazy, Suspense } from "react";
+import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, StickyNote as NoteIcon, X, Headphones } from "lucide-react";
-import dynamic from "next/dynamic";
 import confetti from "canvas-confetti";
 import { useAudio } from "@/context/AudioContext";
 import { useNotes } from "@/context/NotesContext";
 
 // Dynamic Imports (Code Splitting)
-const YouTubePlayer = dynamic(() => import("@/components/YouTubePlayer"));
-const ZenRingTimer = dynamic(() => import("@/components/ZenRingTimer"));
-const StickyNotes = dynamic(() => import("@/components/StickyNotes"));
-const WhisperAI = dynamic(() => import("@/components/WhisperAI"));
-const Gateway = dynamic(() => import("@/components/Gateway"));
-const ZenMusic = dynamic(() => import("@/components/ZenMusic"));
-const FloatingMiniPlayer = dynamic(() => import("@/components/FloatingMiniPlayer"));
+const YouTubePlayer = lazy(() => import("@/components/YouTubePlayer"));
+const ZenRingTimer = lazy(() => import("@/components/ZenRingTimer"));
+const StickyNotes = lazy(() => import("@/components/StickyNotes"));
+const WhisperAI = lazy(() => import("@/components/WhisperAI"));
+const Gateway = lazy(() => import("@/components/Gateway"));
+const ZenMusic = lazy(() => import("@/components/ZenMusic"));
+const FloatingMiniPlayer = lazy(() => import("@/components/FloatingMiniPlayer"));
+
+import About from "./pages/About";
+import Pricing from "./pages/Pricing";
+import Testimonials from "./pages/Testimonials";
 
 export default function Home() {
   const { setIsPanelOpen } = useAudio();
   const { hasNewNote, setHasNewNote } = useNotes();
   const [videoId, setVideoId] = useState<string | null>(null);
+  const [playlistId, setPlaylistId] = useState<string | null>(null);
   const [biggestFear, setBiggestFear] = useState<string>("");
   const [playerState, setPlayerState] = useState(-1);
   const [isHardStop, setIsHardStop] = useState(false);
@@ -32,6 +37,8 @@ export default function Home() {
   const [isSessionEnded, setIsSessionEnded] = useState(false);
   const [showTestConfettiModal, setShowTestConfettiModal] = useState(false);
   const [testConfettiSeconds, setTestConfettiSeconds] = useState("5");
+
+  const navigate = useNavigate();
 
   // Sync AudioContext panel state
   useEffect(() => {
@@ -75,18 +82,27 @@ export default function Home() {
     };
   }, [videoId, playerState, isHardStop]);
 
-  const extractVideoId = (url: string) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+  const extractYouTubeInfo = (url: string) => {
+    const videoRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const videoMatch = url.match(videoRegExp);
+    const videoId = (videoMatch && videoMatch[2].length === 11) ? videoMatch[2] : null;
+
+    const listRegExp = /[?&]list=([^#\&\?]+)/;
+    const listMatch = url.match(listRegExp);
+    const playlistId = listMatch ? listMatch[1] : null;
+
+    return { videoId, playlistId };
   };
 
   const handleEnterGateway = (url: string, fear: string) => {
-    const id = extractVideoId(url);
-    if (id) {
-       setVideoId(id);
+    const info = extractYouTubeInfo(url);
+    if (info.videoId || info.playlistId) {
+       // Support purely playlist URLs by passing an empty string for videoId
+       setVideoId(info.videoId || "");
+       setPlaylistId(info.playlistId);
        setBiggestFear(fear);
        setShowTestConfettiModal(true);
+       navigate("/app");
     }
   };
 
@@ -162,33 +178,39 @@ export default function Home() {
 
   return (
     <AnimatePresence mode="wait">
-      {!videoId ? (
-        <motion.div
-          key="gateway"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <Gateway 
-            onEnter={handleEnterGateway} 
-            duration={focusDuration}
-            onDurationChange={setFocusDuration}
-          />
-        </motion.div>
-      ) : (
+      <Routes>
+        {/* Marketing / Landing Pages */}
+        <Route path="/about" element={<About />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/testimonials" element={<Testimonials />} />
+        
+        <Route path="/" element={
+          <motion.div
+            key="gateway"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <Suspense fallback={<div className="h-screen w-full bg-white flex items-center justify-center"><div className="w-8 h-8 border-t-2 border-[#6366F1] rounded-full animate-spin"></div></div>}>
+              <Gateway 
+                onEnter={handleEnterGateway} 
+                duration={focusDuration}
+                onDurationChange={setFocusDuration}
+              />
+            </Suspense>
+          </motion.div>
+        } />
+        <Route path="/app" element={
+          !videoId ? <Navigate to="/" replace /> : (
         <motion.main
           key="flow"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex flex-col md:flex-row h-[100dvh] w-full bg-[#09090B] overflow-hidden selection:bg-[#8c25f4]/20 font-sans relative"
+          className="flex flex-col md:flex-row h-[100dvh] w-full bg-[#FAFAFA] text-zinc-900 overflow-hidden selection:bg-[#6366F1]/20 font-sans relative"
         >
-          {/* Aurora Orbs */}
-          <div className="absolute top-0 left-0 w-64 h-64 md:w-96 md:h-96 bg-indigo-900/20 rounded-full blur-[60px] md:blur-[120px] -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0 transform-gpu" />
-          <div className="absolute bottom-0 right-0 w-64 h-64 md:w-96 md:h-96 bg-purple-900/10 rounded-full blur-[60px] md:blur-[120px] translate-x-1/3 translate-y-1/3 pointer-events-none z-0 transform-gpu" />
-
-
-
-          {/* Confetti Test Modal */}
+          {/* Light Mode Enterprise Grid & Subtle Accents */}
+          <div className="absolute inset-0 pointer-events-none z-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
+          <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-indigo-500/5 blur-[120px] -translate-x-1/4 -translate-y-1/4 pointer-events-none z-0 transform-gpu" />
           <AnimatePresence>
             {showTestConfettiModal && (
               <motion.div
@@ -246,29 +268,26 @@ export default function Home() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-md md:backdrop-blur-[100px] flex items-center justify-center p-6"
+                className="fixed inset-0 z-[1000] bg-white/60 backdrop-blur-md md:backdrop-blur-[20px] flex items-center justify-center p-6"
               >
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9, y: 20 }}
                   transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  className="bg-[#1E2024]/40 backdrop-blur-3xl border border-white/10 rounded-[40px] p-12 flex flex-col items-center text-center max-w-[500px] w-full shadow-[0_40px_120px_rgba(0,0,0,0.5)] relative overflow-hidden transform-gpu"
+                  className="glass-premium border border-zinc-200 rounded-[40px] p-12 flex flex-col items-center text-center max-w-[500px] w-full shadow-[0_40px_120px_rgba(0,0,0,0.15)] relative overflow-hidden transform-gpu"
                 >
-                  {/* Subtle Inner Glow */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                  
-                  <div className="w-24 h-24 rounded-3xl bg-white/5 flex items-center justify-center mb-8 text-5xl shadow-inner">
+                  <div className="w-24 h-24 rounded-3xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mb-8 text-5xl shadow-inner">
                     🎉
                   </div>
                   
-                  <h3 className="text-[42px] md:text-[52px] font-bold text-white mb-4 tracking-tight leading-tight">
+                  <h3 className="text-[42px] md:text-[52px] font-bold text-zinc-900 mb-4 tracking-tight leading-tight">
                     Incredible focus!
                   </h3>
                   
-                  <p className="text-zinc-400 text-lg md:text-xl mb-12 leading-relaxed font-medium">
-                    You unlocked a <span className="text-white font-bold opacity-90">5-minute break</span>.
-                    <br/><span className="text-zinc-500 text-base mt-2 block font-normal px-8">Stretch, breathe, and grab some water.</span>
+                  <p className="text-zinc-500 text-lg md:text-xl mb-12 leading-relaxed font-medium">
+                    You unlocked a <span className="text-zinc-900 font-bold">5-minute break</span>.
+                    <br/><span className="text-zinc-400 text-base mt-2 block font-normal px-8">Stretch, breathe, and grab some water.</span>
                   </p>
                   
                   <div className="flex flex-col gap-6 w-full">
@@ -279,7 +298,7 @@ export default function Home() {
                           setIsBreakMode(true);
                           setFocusDuration(5);
                        }}
-                       className="w-full py-5 rounded-2xl bg-white text-black font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)] text-lg"
+                       className="w-full py-5 rounded-2xl bg-[#6366F1] text-white font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-[#6366F1]/20 text-lg"
                      >
                        Start Break Timer
                      </button>
@@ -288,7 +307,7 @@ export default function Home() {
                           setShowBreakModal(false);
                           setIsHardStop(false);
                        }}
-                       className="w-full py-2 text-zinc-500 hover:text-zinc-300 font-medium transition-colors text-sm underline-offset-8 hover:underline"
+                       className="w-full py-2 text-zinc-400 hover:text-zinc-700 font-medium transition-colors text-sm underline-offset-8 hover:underline"
                      >
                        Skip break and keep working
                      </button>
@@ -300,10 +319,12 @@ export default function Home() {
 
           {/* [Section A] Main Cinematic Video Section (70%) */}
           <section className="relative z-[1] overflow-hidden w-full h-auto aspect-video md:aspect-auto md:h-full md:w-[70%] shrink-0">
-            <YouTubePlayer 
-              videoId={videoId} 
-              onStateChange={handleStateChange}
-            >
+            <Suspense fallback={<div className="w-full h-full bg-black flex items-center justify-center"><div className="w-8 h-8 border-t-2 border-[#2b7fff] rounded-full animate-spin"></div></div>}>
+              <YouTubePlayer 
+                videoId={videoId} 
+                playlistId={playlistId}
+                onStateChange={handleStateChange}
+              >
               {/* Biggest Fear Overlay (Top Center) */}
               {biggestFear && (
                 <div className="absolute top-4 md:top-8 left-4 md:left-8 z-[8000] pointer-events-none opacity-40 hover:opacity-100 transition-opacity duration-1000">
@@ -314,7 +335,7 @@ export default function Home() {
               )}
 
               {/* Floating Gamified Timer (Visible in Fullscreen) */}
-              <div className="absolute top-4 right-4 md:top-8 md:right-auto md:left-1/2 md:-translate-x-1/2 z-[9999] bg-black/40 backdrop-blur-3xl border border-white/10 shadow-2xl rounded-full px-4 py-2 md:px-8 md:py-3 flex items-center justify-center pointer-events-auto text-sm md:text-base">
+              <div className="absolute top-4 right-4 md:top-8 md:right-auto md:left-1/2 md:-translate-x-1/2 z-[9999] bg-white/80 backdrop-blur-3xl border border-zinc-200 shadow-xl rounded-full px-4 py-2 md:px-8 md:py-3 flex items-center justify-center pointer-events-auto text-sm md:text-base">
                 <div className="w-24 h-6 md:w-32 md:h-8">
                   <ZenRingTimer 
                      isPlaying={playerState === 1 && !isHardStop} 
@@ -331,22 +352,22 @@ export default function Home() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="absolute inset-0 z-[1000] bg-black/60 backdrop-blur-md md:backdrop-blur-[120px] flex items-center justify-center p-6 text-center cursor-default pointer-events-auto"
+                    className="absolute inset-0 z-[1000] bg-white/60 backdrop-blur-md md:backdrop-blur-[20px] flex items-center justify-center p-6 text-center cursor-default pointer-events-auto"
                   >
                     <motion.div
                       initial={{ scale: 0.9, opacity: 0, y: 20 }}
                       animate={{ scale: 1, opacity: 1, y: 0 }}
-                      className="max-w-md w-full bg-[#1E2024]/40 border border-white/10 rounded-[40px] p-8 md:p-12 shadow-2xl backdrop-blur-3xl"
+                      className="max-w-md w-full glass-premium border border-zinc-200 rounded-[40px] p-8 md:p-12 shadow-2xl backdrop-blur-3xl"
                     >
-                      <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mb-6 mx-auto text-4xl shadow-inner border border-white/5">
+                      <div className="w-20 h-20 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mb-6 mx-auto text-4xl shadow-inner">
                         {isSessionEnded ? "🔄" : "⚠️"}
                       </div>
                       
-                      <h3 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
+                      <h3 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-4 tracking-tight">
                         {isSessionEnded ? "Break Complete!" : "Presence Lost"}
                       </h3>
                       
-                      <p className="text-zinc-400 text-lg mb-8 leading-relaxed">
+                      <p className="text-zinc-500 text-lg mb-8 leading-relaxed">
                         {isSessionEnded 
                           ? "Your break has ended. Ready to dive back into deep work?" 
                           : "The timer paused because you were distracted. Get back to focus!"
@@ -358,7 +379,7 @@ export default function Home() {
                           setIsHardStop(false);
                           setIsSessionEnded(false);
                         }}
-                        className="w-full py-4 rounded-xl bg-white text-black font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                        className="w-full py-4 rounded-xl bg-zinc-900 text-white font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"
                       >
                         {isSessionEnded ? "Start New Focus Session" : "I'm Back"}
                       </button>
@@ -366,17 +387,37 @@ export default function Home() {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </YouTubePlayer>
+              </YouTubePlayer>
+            </Suspense>
           </section>
 
           {/* [Section B] Routed Utility Sidebar (Responsive Drawer) (30%) */}
           <AnimatePresence>
             <motion.aside 
               initial={false}
-              className="relative flex flex-col-reverse md:flex-row flex-1 md:flex-none md:h-full w-full md:w-[30%] z-[200] md:z-20 bg-[#09090B]/60 backdrop-blur-2xl border-t md:border-t-0 md:border-l border-white/10 shadow-[inset_1px_0_20px_rgba(255,255,255,0.02)] overflow-hidden"
+              className="relative flex flex-col-reverse md:flex-row flex-1 md:flex-none md:h-full w-full md:w-[30%] z-[200] md:z-20 bg-white/70 backdrop-blur-2xl border-t md:border-t-0 md:border-l border-zinc-200 shadow-[inset_1px_0_20px_rgba(0,0,0,0.02)] overflow-hidden"
             >
               {/* Main Content Area (Left side of sidebar) */}
               <div className="flex-1 flex flex-col h-full overflow-hidden overscroll-none">
+
+                {/* Sub-Header Area */}
+                <div className="h-14 flex-shrink-0 flex items-center justify-center border-b border-zinc-200 bg-white/40 backdrop-blur-md px-4 relative z-20">
+                    <span className="text-[11px] uppercase tracking-[0.2em] font-bold text-zinc-500">
+                      {activeTab === "ai" ? "Neural Assistant" : 
+                       activeTab === "notes" ? "Knowledge Base" : "Acoustic Environment"}
+                    </span>
+                    
+                    {/* Floating Action Button (Top Right of Sidebar) */}
+                    {activeTab === "music" && (
+                      <button 
+                        onClick={() => setIsPanelOpen(false)}
+                        className="absolute right-4 p-1.5 rounded-lg bg-white/50 hover:bg-white text-zinc-400 hover:text-zinc-600 transition-colors border border-zinc-200 shadow-sm"
+                        title="Close Audio Panel"
+                      >
+                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                      </button>
+                    )}
+                </div>
 
                 {/* Sidebar Bottom: Dynamic Tool Viewport */}
                 <div className="flex-1 relative overflow-hidden bg-transparent">
@@ -422,10 +463,10 @@ export default function Home() {
               </div>
 
               {/* Navigation Strip */}
-              <nav className="flex flex-row md:flex-col justify-around md:justify-start items-center h-14 md:h-full w-full md:w-20 shrink-0 border-t md:border-t-0 md:border-l border-white/5 bg-[#09090B]/90 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none pb-safe md:pb-0 md:py-8 gap-0 md:gap-4 z-10 px-4 md:px-0">
+              <nav className="flex flex-row md:flex-col justify-around md:justify-start items-center h-14 md:h-full w-full md:w-20 shrink-0 border-t md:border-t-0 md:border-l border-zinc-200 bg-white/90 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none pb-safe md:pb-0 md:py-8 gap-0 md:gap-4 z-10 px-4 md:px-0">
                 <button
                   onClick={() => setActiveTab("ai")}
-                  className={`relative p-3 rounded-xl transition-all duration-300 group ${activeTab === "ai" ? "bg-white/10 text-zinc-100" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"}`}
+                  className={`relative p-3 rounded-xl transition-all duration-300 group ${activeTab === "ai" ? "bg-zinc-100 text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"}`}
                   title="Study Assistant"
                 >
                   <Sparkles size={22} className="md:size-[24px]" />
@@ -433,20 +474,20 @@ export default function Home() {
 
                 <button
                   onClick={() => setActiveTab("notes")}
-                  className={`relative p-3 rounded-xl transition-all duration-300 group ${activeTab === "notes" ? "bg-white/10 text-zinc-100" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"}`}
+                  className={`relative p-3 rounded-xl transition-all duration-300 group ${activeTab === "notes" ? "bg-zinc-100 text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"}`}
                   title="Notes"
                 >
                   <NoteIcon size={22} className="md:size-[24px]" />
                   {hasNewNote && activeTab !== "notes" && (
-                    <span className="w-2 h-2 rounded-full bg-red-500 absolute top-2 right-2 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse" />
+                     <span className="w-2 h-2 rounded-full bg-red-500 absolute top-2 right-2 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse" />
                   )}
                 </button>
 
-                <div className="hidden md:block w-8 h-px bg-white/5 my-2" /> {/* Divider */}
+                <div className="hidden md:block w-8 h-px bg-zinc-200 my-2" /> {/* Divider */}
 
                 <button
                   onClick={() => setActiveTab("music")}
-                  className={`relative p-3 rounded-xl transition-all duration-300 group ${activeTab === "music" ? "bg-white/10 text-zinc-100" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"}`}
+                  className={`relative p-3 rounded-xl transition-all duration-300 group ${activeTab === "music" ? "bg-zinc-100 text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"}`}
                   title="Focus Audio"
                 >
                   <Headphones size={22} className="md:size-[24px]" />
@@ -456,12 +497,16 @@ export default function Home() {
           </AnimatePresence>
 
           {/* Floating Audio Mini-Player */}
-          <FloatingMiniPlayer onExpand={() => {
-            setActiveTab("music");
-          }} />
+          <Suspense fallback={null}>
+            <FloatingMiniPlayer onExpand={() => {
+              setActiveTab("music");
+            }} />
+          </Suspense>
 
         </motion.main>
-      )}
+          )}
+        />
+      </Routes>
     </AnimatePresence>
   );
 }

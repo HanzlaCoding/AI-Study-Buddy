@@ -59,13 +59,13 @@ export default function WhisperAI({ onClose }: WhisperAIProps) {
       <div className="p-6 md:p-8 pb-4 md:pb-6 flex items-center justify-between bg-transparent shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-          <h3 className="text-xs tracking-widest text-zinc-400 uppercase font-medium">Study Assistant</h3>
+          <h3 className="text-xs tracking-widest text-zinc-500 uppercase font-bold">Study Assistant</h3>
         </div>
         <div className="flex items-center">
           {onClose && (
             <button 
               onClick={onClose}
-              className="ml-2 p-2 hover:bg-white/5 rounded-xl transition-all text-zinc-600 hover:text-white"
+              className="ml-2 p-2 hover:bg-zinc-100 rounded-xl transition-all text-zinc-500 hover:text-zinc-900"
             >
               <X size={16} />
             </button>
@@ -90,10 +90,10 @@ export default function WhisperAI({ onClose }: WhisperAIProps) {
             animate={{ opacity: 1, y: 0 }}
             className={`flex gap-4 md:gap-5 ${m.role === "assistant" ? "" : "flex-row-reverse"}`}
           >
-            <div className={`mt-1 font-bold text-xs uppercase tracking-widest ${m.role === "assistant" ? "text-zinc-500" : "text-[#8c25f4]"}`}>
+            <div className={`mt-1 font-bold text-xs uppercase tracking-widest ${m.role === "assistant" ? "text-zinc-500" : "text-[#6366F1]"}`}>
               {m.role === "assistant" ? "AI" : "YOU"}
             </div>
-            <div className={`text-[14px] md:text-[15px] leading-relaxed font-normal ${m.role === "assistant" ? "text-zinc-300" : "text-white"}`}>
+            <div className={`text-[14px] md:text-[15px] leading-relaxed font-medium ${m.role === "assistant" ? "text-zinc-600" : "text-zinc-900"}`}>
               {m.content}
             </div>
           </motion.div>
@@ -102,12 +102,12 @@ export default function WhisperAI({ onClose }: WhisperAIProps) {
         {isLoading && (
           <div className="flex gap-4 md:gap-6">
             <div className="h-10 w-10 flex items-center justify-center">
-              <Sparkles size={16} className="text-zinc-500 animate-pulse" />
+              <Sparkles size={16} className="text-[#6366F1] animate-pulse" />
             </div>
             <div className="flex gap-3 items-center px-6 opacity-30">
-              <div className="w-1.5 h-1.5 bg-zinc-700 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-              <div className="w-1.5 h-1.5 bg-zinc-700 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-              <div className="w-1.5 h-1.5 bg-zinc-700 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+              <div className="w-1.5 h-1.5 bg-zinc-300 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+              <div className="w-1.5 h-1.5 bg-zinc-300 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+              <div className="w-1.5 h-1.5 bg-zinc-300 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
             </div>
           </div>
         )}
@@ -125,21 +125,21 @@ export default function WhisperAI({ onClose }: WhisperAIProps) {
       </div>
 
       <div className="p-6 md:p-8 pt-2 md:pt-4 bg-transparent shrink-0">
-         <div className="relative flex items-center group bg-white/5 border border-white/10 rounded-full transition-all duration-300 focus-within:bg-white/10 focus-within:border-white/20">
+         <div className="relative flex items-center group bg-white border border-zinc-200 rounded-2xl transition-all duration-300 focus-within:border-[#6366F1]/50 focus-within:ring-4 focus-within:ring-[#6366F1]/10 shadow-sm hover:shadow-md">
            <input
              type="text"
              value={input}
              onChange={(e) => setInput(e.target.value)}
              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
              placeholder="Ask a question..."
-             className="w-full bg-transparent py-3 pl-5 pr-12 text-sm md:text-[15px] text-zinc-200 placeholder:text-zinc-500 focus:outline-none transition-all font-normal"
+             className="w-full bg-transparent py-3 pl-5 pr-12 text-sm md:text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none transition-all font-medium"
            />
            <button
              onClick={sendMessage}
              disabled={isLoading}
-             className="absolute right-2 p-2 hover:bg-white/10 rounded-full transition-all duration-300 group active:scale-95 flex items-center justify-center"
+             className="absolute right-2 p-2 hover:bg-zinc-100 rounded-xl transition-all duration-300 group active:scale-95 flex items-center justify-center disabled:opacity-50"
            >
-             <Send size={16} className="text-zinc-400 group-focus-within:text-zinc-200 transition-colors" />
+             <Send size={16} className="text-zinc-400 group-focus-within:text-[#6366F1] transition-colors" />
            </button>
          </div>
        </div>

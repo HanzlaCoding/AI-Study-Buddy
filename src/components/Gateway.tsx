@@ -1,18 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { 
-  ArrowRight, 
-  Link as LinkIcon, 
-  Sparkles, 
-  HelpCircle, 
-  Zap, 
+import { useState, useCallback, useEffect } from "react";
+import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import {
+  Link as LinkIcon,
+  Sparkles,
+  Zap,
   CheckCircle,
   FileText,
-  CornerDownLeft
+  CornerDownLeft,
+  Timer,
+  Music,
+  Brain,
 } from "lucide-react";
-import LiquidGradient from "./LiquidGradient";
+import DarkSaaSLayout from "../layouts/DarkSaaSLayout";
 
 interface GatewayProps {
   onEnter: (url: string, fear: string) => void;
@@ -25,233 +26,299 @@ export default function Gateway({ onEnter, onDurationChange, duration, hideUI = 
   const [url, setUrl] = useState("https://www.youtube.com/watch?v=w0K5SOSlOvU");
   const [focusDuration, setFocusDuration] = useState(duration);
   const [showError, setShowError] = useState(false);
-  
-  const [showFearModal, setShowFearModal] = useState(false);
   const [fear, setFear] = useState("");
 
-  const handleEnter = () => {
-    if (url.trim()) {
-      setShowFearModal(true);
+  // Parallax tracking
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const springConfig = { damping: 50, stiffness: 400 };
+  const smoothMouseX = useSpring(mouseX, springConfig);
+  const smoothMouseY = useSpring(mouseY, springConfig);
+
+  // Transformation values for different parallax depths
+  const subtleX = useTransform(smoothMouseX, [-0.5, 0.5], [-15, 15]);
+  const subtleY = useTransform(smoothMouseY, [-0.5, 0.5], [-15, 15]);
+  const mediumX = useTransform(smoothMouseX, [-0.5, 0.5], [-35, 35]);
+  const mediumY = useTransform(smoothMouseY, [-0.5, 0.5], [-35, 35]);
+  const intenseX = useTransform(smoothMouseX, [-0.5, 0.5], [-60, 60]);
+  const intenseY = useTransform(smoothMouseY, [-0.5, 0.5], [-60, 60]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      // Normalize mouse position between -0.5 and 0.5
+      mouseX.set(e.clientX / window.innerWidth - 0.5);
+      mouseY.set(e.clientY / window.innerHeight - 0.5);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [mouseX, mouseY]);
+
+  const handleStartFocus = useCallback((e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (url.trim() && fear.trim()) {
+      onDurationChange(focusDuration);
+      onEnter(url, fear);
     } else {
       setShowError(true);
     }
-  };
+  }, [url, fear, focusDuration, onDurationChange, onEnter]);
 
-  const handleConfirmStart = () => {
-    if (fear.trim()) {
-      onDurationChange(focusDuration);
-      onEnter(url, fear);
-    }
-  };
+  const logos = [
+    { icon: <Zap size={16}/>, name: "ACME Corp" },
+    { icon: <CheckCircle size={16}/>, name: "Linear" },
+    { icon: <Sparkles size={16}/>, name: "OpenAI" },
+    { icon: <FileText size={16}/>, name: "Notion" },
+    { icon: <Zap size={16}/>, name: "Vercel" },
+    { icon: <CheckCircle size={16}/>, name: "Stripe" },
+    { icon: <Sparkles size={16}/>, name: "Airbnb" },
+    { icon: <FileText size={16}/>, name: "Figma" },
+  ];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (showFearModal) {
-      handleConfirmStart();
-    } else {
-      handleEnter();
-    }
-  };
+  const quotes = [
+    { text: "\"Best focus tool I've ever used.\"" },
+    { text: "\"Neural Acoustics is pure genius.\"" },
+    { text: "\"I finished my thesis in 3 weeks.\"" },
+    { text: "\"The Pomodoro timer is flawless.\"" },
+    { text: "\"Finally, a workspace that respects focus.\"" },
+    { text: "\"The AI summaries saved me hours.\"" },
+  ];
 
   return (
-    <div className={`h-screen flex flex-col p-6 md:p-12 relative overflow-hidden bg-[#050505] text-white selection:bg-[#2b7fff]/30 font-sans transition-opacity duration-1000 ${hideUI ? "opacity-40" : "opacity-100"}`}>
-      <LiquidGradient />
-      
-      {!hideUI && (
-        <>
-          {/* Fear Modal Overlay */}
-          <AnimatePresence>
-            {showFearModal && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setShowFearModal(false)}
-                className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-md flex items-center justify-center p-6"
-              >
-                <motion.div
-                  initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  exit={{ scale: 0.9, opacity: 0, y: 10 }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="bg-[#0C0C0E]/90 border border-white/10 p-8 md:p-12 rounded-[32px] max-w-lg w-full text-center shadow-[0_40px_80px_-20px_rgba(220,38,38,0.3)] transform-gpu relative overflow-hidden"
-                >
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-900/0 via-red-500/50 to-red-900/0" />
-                  <h3 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">What is your biggest fear?</h3>
-                  <p className="text-zinc-400 text-sm md:text-base mb-8 leading-relaxed max-w-sm mx-auto">
-                    Acknowledge the cost of failure. Let it drive your focus for the next {focusDuration} minutes.
-                  </p>
-                  
-                  <form onSubmit={(e) => { e.preventDefault(); handleConfirmStart(); }} className="space-y-6">
-                    <input 
-                      type="text" 
-                      placeholder="e.g., Failing the exam, staying average..."
-                      className="w-full bg-black/50 border border-red-900/30 rounded-2xl py-5 px-6 text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-500/50 transition-colors text-center text-lg shadow-inner"
-                      value={fear}
-                      onChange={(e) => setFear(e.target.value)}
-                      autoFocus
-                    />
-                    <button
-                      type="submit"
-                      disabled={!fear.trim()}
-                      className={`w-full py-5 text-[11px] font-black uppercase tracking-[0.4em] rounded-2xl transition-all duration-300 ${fear.trim() ? "bg-red-600 text-white hover:bg-red-500 hover:scale-[1.02] shadow-[0_0_30px_rgba(220,38,38,0.4)]" : "bg-zinc-900 text-zinc-600"}`}
-                    >
-                      Embrace The Fear & Start
-                    </button>
-                  </form>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Error Modal Overlay */}
-          <AnimatePresence>
-            {showError && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setShowError(false)}
-                className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-md flex items-center justify-center p-6"
-              >
-                <motion.div
-                  initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  exit={{ scale: 0.9, opacity: 0, y: 10 }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="bg-[#0C0C0E]/80 border border-white/10 p-8 rounded-[32px] max-w-sm w-full text-center shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] transform-gpu"
-                >
-                  <div className="w-16 h-16 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mx-auto mb-6">
-                    <Zap size={24} className="text-orange-500" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">Signal Interrupted.</h3>
-                  <p className="text-zinc-500 text-sm mb-8 leading-relaxed">
-                    Please paste a valid YouTube URL to establish a neural focus link.
-                  </p>
-                  <button
-                    onClick={() => setShowError(false)}
-                    className="w-full py-4 bg-white text-black text-[10px] font-black uppercase tracking-[0.4em] rounded-2xl hover:scale-[1.02] transition-all"
-                  >
-                    Acknowledged
-                  </button>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Top Navigation */}
-          <nav className="relative z-10 flex justify-between items-center mb-12 md:mb-24">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-[#2b7fff] flex items-center justify-center shadow-[0_0_20px_rgba(43,127,255,0.5)]">
-                <Zap size={18} className="text-white fill-white md:size-[22px]" />
-              </div>
-              <span className="text-base md:text-lg font-bold tracking-tight">FlowState</span>
-            </div>
-            
-            <div className="flex items-center gap-4 md:gap-12 text-[11px] md:text-[13px] font-medium text-zinc-400">
-              <a href="#" className="hidden sm:block hover:text-white transition-colors">Methodology</a>
-              <a href="#" className="hidden sm:block hover:text-white transition-colors">Pricing</a>
-              <div className="hidden sm:block w-px h-4 bg-zinc-800" />
-              <button className="font-bold text-white hover:text-[#2b7fff] transition-colors">Log In</button>
-            </div>
-          </nav>
-
-          {/* Main Content Area (Centering logic restored) */}
-          <main className="flex-1 flex flex-col items-center justify-center max-w-7xl mx-auto w-full relative z-10 -mt-20 md:-mt-32">
+    <div className={`transition-opacity duration-1000 ${hideUI ? "opacity-0 pointer-events-none" : "opacity-100"} min-h-[100dvh] flex flex-col`}>
+      <DarkSaaSLayout>
+        {/* ── Error Modal ── */}
+        <AnimatePresence>
+          {showError && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-              className="text-center space-y-12 md:space-y-16 w-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowError(false)}
+              className="fixed inset-0 z-[500] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
             >
-              <div className="space-y-4 md:space-y-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#2b7fff]/5 border border-[#2b7fff]/20 mb-2 animate-pulse">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#2b7fff]" />
-                  <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2b7fff]/80">System Ready</span>
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-[#111113]/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-5">
+                  <Zap size={22} className="text-red-400" />
                 </div>
-                <h1 className="text-5xl sm:text-7x md:text-8xl lg:text-[100px] font-medium tracking-[-0.05em] leading-[0.9] text-white">
-                  Enter <span className="text-[#2b7fff]">Flow</span> State
-                </h1>
-                <p className="text-zinc-500 text-sm md:text-lg lg:text-xl font-normal tracking-tight max-w-xl md:max-w-3xl mx-auto leading-relaxed px-6 md:px-0 opacity-70">
-                  Transmute passive lectures into actionable cognitive assets. <br className="hidden md:block"/> 
-                  The ultimate neural focus environment, engineered for clarity.
+                <h3 className="text-xl font-bold font-heading text-zinc-100 mb-2 tracking-tight">Input Required.</h3>
+                <p className="text-zinc-500 text-sm mb-7 leading-relaxed">
+                  Please provide a valid YouTube URL and identify your biggest distraction to begin the session.
                 </p>
-              </div>
-
-              <div className="relative max-w-3xl mx-auto w-full group px-4 md:px-0">
-                {/* Advanced Input Container */}
-                <form 
-                  onSubmit={handleSubmit}
-                  className={`relative flex items-center bg-[#0C0C0E]/40 border ${url ? "border-[#2b7fff]/50 shadow-[0_0_50px_rgba(43,127,255,0.15)]" : "border-white/5"} rounded-3xl md:rounded-[40px] p-2 md:p-3 focus-within:border-[#2b7fff]/70 focus-within:shadow-[0_0_60px_rgba(43,127,255,0.2)] transition-all duration-700 backdrop-blur-md md:backdrop-blur-3xl overflow-hidden group/form`}
+                <button
+                  onClick={() => setShowError(false)}
+                  className="w-full py-3 bg-[#111113] hover:bg-[#18181b] text-emerald-400 border border-emerald-500/30 hover:border-emerald-400/60 text-[11px] font-bold uppercase tracking-[0.3em] rounded-xl transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.1)] hover:shadow-[0_0_25px_rgba(16,185,129,0.2)]"
+                  aria-label="Acknowledge Error"
                 >
-                  {/* Decorative glow line */}
-                  <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
-                  
-                  <div className="pl-4 md:pl-6 pr-2 md:pr-4">
-                    <LinkIcon size={20} className={`${url ? "text-[#2b7fff]" : "text-zinc-700"} transition-colors duration-700 md:size-6`} />
-                  </div>
-                  
-                  <input 
-                    type="text" 
-                    placeholder="Establish Neural Link (Paste YouTube URL)..."
-                    className="flex-1 bg-transparent border-none py-4 md:py-6 px-2 md:px-4 text-sm md:text-lg text-white placeholder:text-zinc-800 focus:ring-0 outline-none font-light tracking-tight"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                  />
-
-                  <div className="pr-2 md:pr-3 flex items-center gap-3 md:gap-4">
-                    <div className="hidden lg:flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-white/5 border border-white/5 text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
-                      <span className="opacity-50">CMD</span> V
-                    </div>
-                    <button 
-                      type="submit"
-                      className={`w-12 h-12 md:w-16 md:h-16 rounded-2xl md:rounded-[30px] flex items-center justify-center transition-all duration-700 active:scale-95 shadow-2xl ${url.trim() ? "bg-[#2b7fff] text-white shadow-[#2b7fff]/40" : "bg-zinc-900/50 text-zinc-700"}`}
-                    >
-                      <CornerDownLeft size={20} strokeWidth={2.5} className="md:size-[24px]" />
-                    </button>
-                  </div>
-                </form>
-
-                {/* Refined Quick Actions */}
-                <div className="mt-10 md:mt-12 flex flex-wrap items-center justify-center gap-8 md:gap-14">
-                  <button className="flex items-center gap-3 text-[10px] md:text-[11px] font-bold text-zinc-600 hover:text-white transition-all group uppercase tracking-[0.2em]">
-                    <Sparkles size={14} className="text-zinc-800 group-hover:text-[#2b7fff] md:size-[16px] transition-colors" />
-                    AI Synthesis
-                  </button>
-                  <div className="hidden sm:block w-px h-3 bg-zinc-900" />
-                  <button className="flex items-center gap-3 text-[10px] md:text-[11px] font-bold text-zinc-600 hover:text-white transition-all group uppercase tracking-[0.2em]">
-                    <FileText size={14} className="text-zinc-800 group-hover:text-[#2b7fff] md:size-[16px] transition-colors" />
-                    Auto-Indexing
-                  </button>
-                  <div className="hidden sm:block w-px h-3 bg-zinc-900" />
-                  <button className="flex items-center gap-3 text-[10px] md:text-[11px] font-bold text-zinc-600 hover:text-white transition-all group uppercase tracking-[0.2em]">
-                    <Zap size={14} className="text-zinc-800 group-hover:text-[#2b7fff] md:size-[16px] transition-colors" />
-                    Zero Lag
-                  </button>
-                </div>
-              </div>
+                  Acknowledged
+                </button>
+              </motion.div>
             </motion.div>
-          </main>
+          )}
+        </AnimatePresence>
 
-          {/* Footer Status Indicators */}
-          <footer className="relative z-10 flex flex-col md:flex-row justify-between items-center w-full gap-6 md:gap-0 mt-8">
-            <div className="flex flex-col items-center md:items-start gap-2">
-              <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-700">System Status</span>
-              <div className="flex items-center gap-2.5">
-                <div className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-20"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2b7fff]"></span>
+        {/* ════════════════════════════════════════ */}
+        {/* HERO — Full viewport, zero scroll needed */}
+        {/* ════════════════════════════════════════ */}
+        <section className="min-h-[100dvh] w-full max-w-7xl mx-auto flex flex-col items-center justify-center relative pt-12 pb-6 px-4 sm:px-6 lg:px-8 overflow-hidden z-0">
+          {/* Ambient Glows */}
+          <div className="absolute w-[800px] h-[400px] bg-emerald-600/10 blur-[150px] rounded-full top-0 left-1/2 -translate-x-1/2 pointer-events-none z-0" />
+
+          {/* 3D Asset 4: Ambient Waves (Hero Background) */}
+          <motion.img
+            src="/assets/3d/ambient_waves.png"
+            alt=""
+            className="absolute top-[10%] -left-[10%] w-[120%] max-w-[1500px] absolute mix-blend-screen opacity-30 pointer-events-none z-0"
+            style={{ x: subtleX, y: subtleY }}
+            animate={{ y: [0, -20, 0] }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          />
+
+          {/* 3D Asset 1: Neural Sync (Floating near Hero) */}
+          <motion.img
+            src="/assets/3d/neural_sync.png"
+            alt="Neural Sync Brain"
+            className="absolute -top-[5%] -right-[15%] w-[450px] absolute mix-blend-screen opacity-30 pointer-events-none z-0 hidden lg:block"
+            style={{ x: intenseX, y: intenseY }}
+            animate={{ y: [0, -20, 0] }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          />
+
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="text-center w-full max-w-3xl mx-auto flex flex-col items-center relative z-10"
+          >
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-5 backdrop-blur-md">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] sm:text-[11px] font-semibold tracking-wide text-zinc-400">FlowState v2.0 — Your personal study room</span>
+            </div>
+
+            {/* Main Heading */}
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-heading font-bold tracking-tight leading-[1.1] text-zinc-100 mb-4 md:mb-6">
+              Master complex concepts in{" "}
+              <span className="bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 bg-clip-text text-transparent animate-gradient">
+                absolute focus.
+              </span>
+            </h1>
+
+            {/* Subtitle */}
+            <p className="text-zinc-400 text-sm md:text-lg font-normal leading-relaxed max-w-2xl mx-auto mb-8 md:mb-10">
+              The premier distraction-free study room. Combine embedded lectures, AI mentoring, and persistent notes to conquer your syllabus.
+            </p>
+
+            {/* Form */}
+            <form onSubmit={handleStartFocus} className="flex flex-col gap-3 w-full max-w-md mx-auto relative z-20">
+              {/* URL Input */}
+              <div className="relative group/input">
+                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                  <LinkIcon size={16} className="text-zinc-600 group-focus-within/input:text-emerald-400 transition-colors" />
                 </div>
-                <span className="text-xs font-semibold text-zinc-400">Operational</span>
+                <input
+                  type="text"
+                  placeholder="Paste your lecture YouTube URL here..."
+                  className="w-full bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-xl py-3.5 pl-11 pr-4 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 transition-all"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                />
+              </div>
+
+              {/* Distraction Input */}
+              <div className="relative group/input">
+                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                  <Zap size={16} className="text-zinc-600 group-focus-within/input:text-emerald-400 transition-colors" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="What is your biggest distraction right now?"
+                  className="w-full bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-xl py-3.5 pl-11 pr-4 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 transition-all"
+                  value={fear}
+                  onChange={(e) => setFear(e.target.value)}
+                />
+              </div>
+
+              {/* CTA Button */}
+              <button
+                type="submit"
+                className="mt-2 w-full relative overflow-hidden rounded-xl py-4 flex items-center justify-center gap-2.5 text-emerald-400 font-medium text-sm tracking-[0.15em] uppercase active:scale-[0.98] transition-all duration-300 bg-[#111113] hover:bg-[#18181b] border border-emerald-500/30 hover:border-emerald-400/60 shadow-[0_0_15px_rgba(16,185,129,0.1)] hover:shadow-[0_0_25px_rgba(16,185,129,0.2)]"
+              >
+                Enter Flow State
+                <CornerDownLeft size={14} strokeWidth={2.5} />
+              </button>
+            </form>
+          </motion.div>
+        </section>
+
+        {/* ════════════════════════════════════════ */}
+        {/* BELOW THE FOLD — Features + Marquees    */}
+        {/* ════════════════════════════════════════ */}
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-0 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 32 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+            className="flex flex-col items-center relative"
+          >
+            {/* 3D Asset 2: Second Brain Nodes */}
+            <motion.img
+              src="/assets/3d/second_brain_nodes.png"
+              alt=""
+              className="absolute top-[20%] -right-[5%] w-[350px] absolute mix-blend-screen opacity-30 pointer-events-none z-0 hidden md:block"
+              style={{ x: subtleX, y: subtleY }}
+              animate={{ y: [0, -20, 0] }}
+              transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            />
+
+            {/* 3D Asset 3: Zen Clock */}
+            <motion.img
+              src="/assets/3d/zen_clock.png"
+              alt=""
+              className="absolute top-[40%] -left-[10%] w-[350px] absolute mix-blend-screen opacity-30 pointer-events-none z-0 hidden lg:block"
+              style={{ x: mediumX, y: mediumY }}
+              animate={{ y: [0, -20, 0] }}
+              transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+            />
+
+            {/* Section Label */}
+            <p className="text-zinc-600 text-[10px] sm:text-xs font-semibold tracking-[0.2em] uppercase mb-10 relative z-10">What's inside FlowState</p>
+
+            {/* Feature Cards — Bento Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left w-full mb-20 md:mb-28 relative z-10 pl-0 pr-0">
+              
+              <div className="group bg-[#111113]/60 backdrop-blur-2xl border border-white/5 hover:border-emerald-500/20 rounded-2xl p-6 transition-all duration-300 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 via-emerald-500/0 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-5 relative z-10">
+                  <Timer size={20} className="text-emerald-400" />
+                </div>
+                <h3 className="font-bold text-zinc-200 mb-2 text-lg font-heading relative z-10">Hyper-Focus Mode</h3>
+                <p className="text-zinc-500 text-sm leading-relaxed relative z-10">A strict, timer-based environment that eliminates distracting tabs and notifications, putting you in the zone instantly.</p>
+              </div>
+
+              <div className="group bg-[#111113]/60 backdrop-blur-2xl border border-white/5 hover:border-emerald-500/20 rounded-2xl p-6 transition-all duration-300 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 via-emerald-500/0 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-5 relative z-10">
+                  <Music size={20} className="text-emerald-400" />
+                </div>
+                <h3 className="font-bold text-zinc-200 mb-2 text-lg font-heading relative z-10">Neural Acoustics</h3>
+                <p className="text-zinc-500 text-sm leading-relaxed relative z-10">Curated ambient soundscapes designed to increase sustained flow states and deep work capacity during long study sessions.</p>
+              </div>
+
+              <div className="group bg-[#111113]/60 backdrop-blur-2xl border border-white/5 hover:border-emerald-500/20 rounded-2xl p-6 transition-all duration-300 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 via-emerald-500/0 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-5 relative z-10">
+                  <Brain size={20} className="text-emerald-400" />
+                </div>
+                <h3 className="font-bold text-zinc-200 mb-2 text-lg font-heading relative z-10">AI Note Synthesis</h3>
+                <p className="text-zinc-500 text-sm leading-relaxed relative z-10">Instantly capture any thought. The AI organizes them into structured, searchable notes automatically — post-session, ready to review.</p>
               </div>
             </div>
-            
-            <button className="w-12 h-12 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center hover:bg-zinc-800 transition-all group">
-              <span className="text-xl font-bold text-zinc-600 group-hover:text-white">?</span>
-            </button>
-          </footer>
-        </>
-      )}
+
+            {/* Marquee 1 — Company Logos */}
+            <div className="w-screen -mx-6 sm:-mx-8 mb-6">
+              <p className="text-center text-zinc-600 text-[10px] sm:text-xs font-semibold tracking-[0.2em] uppercase mb-6">Used by students at</p>
+              <div className="marquee-container w-full">
+                <div className="marquee-track">
+                  {[...Array(2)].map((_, setIdx) => (
+                    <div key={setIdx} className="flex items-center gap-10 md:gap-16 px-8">
+                      {logos.map((item, i) => (
+                        <div key={i} className="flex items-center gap-2 font-semibold text-sm text-zinc-600 opacity-30 hover:opacity-60 grayscale transition-all whitespace-nowrap cursor-default select-none">
+                          {item.icon} {item.name}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Marquee 2 — Quotes */}
+            <div className="w-screen -mx-6 sm:-mx-8 pb-20 md:pb-28">
+              <div className="marquee-container w-full">
+                <div className="marquee-track-reverse">
+                  {[...Array(2)].map((_, setIdx) => (
+                    <div key={setIdx} className="flex items-center gap-6 px-8">
+                      {quotes.map((item, i) => (
+                        <div key={i} className="flex items-center gap-2 text-xs sm:text-sm italic text-zinc-600 whitespace-nowrap px-4 py-2 rounded-full bg-white/[0.03] border border-white/5 select-none">
+                          {item.text}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+      </DarkSaaSLayout>
     </div>
   );
 }
